@@ -4,7 +4,7 @@ Created on Thu May 18 13:19:39 2017
 
 @author: mige4603
 """
-import time
+# I just want to see what this does.  Also, I erased "import time" directly below this comment.
 import numpy as np
 import scipy.integrate as sp
 import multiprocessing
