@@ -7,12 +7,12 @@ Created on Sat Nov 24 19:09:35 2018
 """
 import numpy as np
 
-dirc = 'Horizontal'
-path = '/home/michael/Documents/LASP/Swirl_Data'
+dirc = 'Random'
+path = '/home/michael/Documents/LASP/IDQuat/DATA/'
 
 # Magnetic moment of 1cm^3 Neodymium magnet (Am^2)
 #mag_mom = 0.875   
-mag_mom = .0875
+mag_mom = .875
 if dirc == 'Horizontal':
     mag = np.array([0,mag_mom,0])
 elif dirc == 'Vertical':
@@ -66,11 +66,11 @@ mult = Im/nproc
 data_cap = 100000
 data_cap_inc = data_cap
 
-shared_Name = path+'/{0}/IDQuat_{0}'.format(dirc)
-fileNames = ['{}.h5'.format(shared_Name), 
-             '{}_Meta.txt'.format(shared_Name),
-             '{}_Landing.vtk'.format(shared_Name), 
-             '{}_Correlation.vtk'.format(shared_Name)]
+shared_Name = 'DATA/{0}/IDQuat_{0}'.format(dirc)
+fileNames = [path+'{}.h5'.format(shared_Name), 
+             path+'{}_Meta.txt'.format(shared_Name),
+             path+'{}_Landing.vtk'.format(shared_Name), 
+             path+'{}_Correlation.vtk'.format(shared_Name)]
 
 # Data Analysis
 X_bin = 501

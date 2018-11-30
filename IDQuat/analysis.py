@@ -320,27 +320,54 @@ def get_counts(file_name):
     file_name : str
         name of meta data file
     """
-    count = np.array([])
+    count = np.zeros(6)
     fp = open(file_name)
     for i, line in enumerate(fp):
         if i == 14:
-            count = np.append(count, get_number(line))
+            count[0] = get_number(line)
         elif i == 15:
-            count = np.append(count, get_number(line))
+            count[1] = get_number(line)
         elif i == 16:
-            count = np.append(count, get_number(line))
+            count[2] = get_number(line)
         elif i == 18:
-            count = np.append(count, get_number(line))
+            count[3] = get_number(line)
         elif i == 20:
-            count = np.append(count, get_number(line))
+            count[4] = get_number(line)
         elif i == 22:
-            count = np.append(count, get_number(line))
+            count[5] = get_number(line)
         elif i >  22:
             break
     fp.close
     
     return count
+
+def get_mag(file_name):
+    """ Return the magnetic field from a data set's meta file.
     
+    Parameters
+    ----------
+    file_name : str
+        Meta file name
+    """
+    mag = False
+    
+    fp = open(file_name)
+    for i, line in enumerate(fp):
+        if i == 3:
+            mag_string = line[28:len(line)-8]        
+            mag = np.empty(3)
+            for i, t in enumerate( mag_string.split() ):
+                if t[-1] == ',':
+                    t = t[0:-1]
+                try:
+                    mag[i] = float(t)
+                except ValueError:
+                    mag = False
+                    break
+            break
+    
+    return mag
+                    
 def landing_pattern(file_data, file_lan_pat):
     """ Construct the landing pattern from data.
     

@@ -8,6 +8,14 @@ Created on Sat Nov 24 18:56:02 2018
 
 import global_var as var
 import numpy as np
+from os import listdir
+
+def list_files(directory, extension):
+    return (f for f in listdir(directory) if f.endswith('.' + extension))
+
+def find_nearest(array, value):
+    idx = (np.abs(array - value)).argmin()
+    return idx
 
 def B_field(R):
     """ Returns B_field at location R as described an idealized magnetic dipole."""
