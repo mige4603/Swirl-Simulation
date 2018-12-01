@@ -9,37 +9,18 @@ import global_var as var
 import functions as fun
 
 import scipy.integrate as sp
-#import threading
-#import multiprocessing as mp
-
 import numpy as np
 
-class tracking_DustGrains():
-    """Generate a duct grain object."""
-    def __init__(self, num_of_grains, succ_queue, fail_queue):
-        self.s_queue = succ_queue
-        self.f_queue = fail_queue
-        self.num = num_of_grains
+class dust_grain():
+    def __init__(self):
+        self.counts = {'success' : 0,
+                       'fall fail' : 0,
+                       'impact fail' : 0,
+                       'collide fail' : 0,
+                       'lift fail' : 0,
+                       'never fail' : 0}
         
-        for i in range(num_of_grains):
-            self.succ = 0
-            self.fall_fail = 0
-            self.impact_fail = 0
-            self.collide_fail = 0
-            self.lift_fail = 0
-            self.never_fail = 0    
-            
-            
-            self.initial_conditions()
-            self.track_phases()
-            
-            self.fail_count = np.array([self.fall_fail,
-                                        self.impact_fail,
-                                        self.collide_fail,
-                                        self.succ+self.lift_fail,
-                                        self.lift_fail,
-                                        self.never_fail])
-            self.f_queue.put(self.fail_count)
+        self.initial_conditions()
 
     def initial_conditions(self, ell_mode=False):       
         """Generate a randomized set of initial conditions.
@@ -136,13 +117,15 @@ class tracking_DustGrains():
         
         self.falling_phase()
         if not self.grav.successful():
-            self.fall_fail+=1
-            
-        self.impacting_phase()
-        if not self.grav.successful():
-            self.impact_fail+=1  
-            
-        self.colliding_phase(integrate_mode, nstp)
+            self.counts['fall fail']+=1
+            self.sim_results = False
+        else:
+            self.impacting_phase()
+            if not self.grav.successful():
+                self.counts['impact fail']+=1 
+                self.sim_results = False
+            else:
+                self.colliding_phase(integrate_mode, nstp)
     
     def falling_phase(self):
         """ Track dust grain to within ten body lengths of the surface. """    
@@ -188,7 +171,7 @@ class tracking_DustGrains():
             quat = self.grav.y[6:10]/np.linalg.norm(self.grav.y[6:10])
             orient = fun.mult_Q(quat,fun.mult_Q(np.array([0,0,0,1]), fun.conj_Q(quat)))[1:4]
             r_low = self.grav.y[2]-(.5*self.Prams['length']*abs(orient[2]))
-
+       
     def colliding_phase(self, integrate_mode, nstp):
         """ Track dust grain until it lies flatt on the surface."""
         r = self.grav.y[0:3]
@@ -223,10 +206,10 @@ class tracking_DustGrains():
         
         impact_incon = np.insert(quat_deriv, 0, quat)
         
-        Prams_new = {}
-        Prams_new['momentz'] = self.Prams['momentz']
-        Prams_new['momentx'] = self.Prams['momentx'] + .25*self.Prams['mass']*self.Prams['length']*self.Prams['length']
-        Prams_new['accel'] = accel
+        self.Prams_new = {}
+        self.Prams_new['momentz'] = self.Prams['momentz']
+        self.Prams_new['momentx'] = self.Prams['momentx'] + .25*self.Prams['mass']*self.Prams['length']*self.Prams['length']
+        self.Prams_new['accel'] = accel
         
         lim = 0
         e3_chg_prev = -1.0
@@ -237,13 +220,13 @@ class tracking_DustGrains():
         V_rem = np.subtract(v, np.dot(v,e_3)*e_3)
         EnLIN = .5*self.Prams['mass']*np.dot(V_rem,V_rem)
         EnTOT = self.Prams['energy'] + EnLIN
-        dt = (np.arccos(e3_prev-.1)-np.arccos(e3_prev))*np.sqrt(self.Prams['momentx']/(2*EnTOT-Prams_new['momentz']*Om_body[2]*Om_body[2]))
+        dt = (np.arccos(e3_prev-.1)-np.arccos(e3_prev))*np.sqrt(self.Prams['momentx']/(2*EnTOT-self.Prams_new['momentz']*Om_body[2]*Om_body[2]))
         
-        self.impact = sp.ode(fun.integrate_impact).set_integrator(integrate_mode,nsteps=nstp)
-        self.impact.set_f_params(Prams_new).set_initial_value(impact_incon, 0.0)
-        while (e3_prev >= 0.1) and (lim < 5) and self.impact.successful():
-            self.impact.integrate(self.impact.t + dt)
-            Q = self.impact.y[0:4]/np.linalg.norm(self.impact.y[0:4])
+        impact = sp.ode(fun.integrate_impact).set_integrator(integrate_mode,nsteps=nstp)
+        impact.set_f_params(self.Prams_new).set_initial_value(impact_incon, 0.0)
+        while (e3_prev >= 0.1) and (lim < 5) and impact.successful():
+            impact.integrate(impact.t + dt)
+            Q = impact.y[0:4]/np.linalg.norm(impact.y[0:4])
             e_3 = fun.mult_Q(Q, fun.mult_Q(np.array([0,0,0,1]), fun.conj_Q(Q)))[1:4]
             
             # Check the paritcle for signs of infinite oscillation
@@ -254,7 +237,7 @@ class tracking_DustGrains():
                 e3_chg_prev = e3_chg
                 lim += 1
                 
-        if self.impact.successful() and (lim < 5):
+        if impact.successful() and (lim < 5):
             # The dust grain may only have flattened because of its linear momentum.
             # Therefore, we must check to see if the torque due to its magnetic moment
             # might be sufficiently strong to overcome graity and lift it off the lunar surface
@@ -265,21 +248,26 @@ class tracking_DustGrains():
             T_net = np.add(T_grav, np.dot(T_mag, t_nit)*t_nit)
             lft_check = np.dot(T_net, t_nit)
             if lft_check <= 0.0:
+                self.counts['success']+=1
+                
                 data_new = r
                 data_new = np.append(data_new, e_3)
                 data_new = np.append(data_new, self.Prams['length'])
                 
-                self.s_queue.put(data_new)
-                self.succ+=1
+                self.sim_results = np.empty((1, 7))
+                self.sim_results[0] = data_new
                 
             else:
-                self.lift_fail+=1
+                self.counts['lift fail']+=1
+                self.sim_results = False
                 
-        elif self.impact.successful() and not (lim < 5):
+        elif impact.successful() and not (lim < 5):
             # Dust Grain Never Flatened Out
-            self.never_fail+=1
+            self.counts['never fail']+=1
+            self.sim_results = False
             
         else:
             # Post-Collison Phase Failure 
-            self.collide_fail+=1
+            self.counts['collide fail']+=1
+            self.sim_results = False
             

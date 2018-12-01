@@ -7,8 +7,12 @@ Created on Sat Nov 24 19:09:35 2018
 """
 import numpy as np
 
+run_num = 0
+rate = []
+
 dirc = 'Random'
-path = '/home/michael/Documents/LASP/IDQuat/DATA/'
+path = '/home/michael/Documents/LASP/Swirl-Simulation/IDQuat/DATA/'+dirc+'/'
+name = path+'IDQuat_'+dirc
 
 # Magnetic moment of 1cm^3 Neodymium magnet (Am^2)
 #mag_mom = 0.875   
@@ -60,17 +64,16 @@ thetaMAX = (np.pi*17.)/36. # Vertical Ejector Angle angle
 
 # Division of Processes
 nproc = 2
-Im = 10000
+Im = 1000
 mult = Im/nproc
 
 data_cap = 100000
 data_cap_inc = data_cap
 
-shared_Name = 'DATA/{0}/IDQuat_{0}'.format(dirc)
-fileNames = [path+'{}.h5'.format(shared_Name), 
-             path+'{}_Meta.txt'.format(shared_Name),
-             path+'{}_Landing.vtk'.format(shared_Name), 
-             path+'{}_Correlation.vtk'.format(shared_Name)]
+fileNames = ['{}.h5'.format(name), 
+             '{}_Meta.txt'.format(name),
+             '{}_Landing.vtk'.format(name), 
+             '{}_Correlation.vtk'.format(name)]
 
 # Data Analysis
 X_bin = 501

@@ -90,12 +90,11 @@ def save_data(s_queue, file_data):
     """ Save data pushed to the queue."""
     while True:
         data = s_queue.get()
-        if any(data):
-            if isfile(file_data):
-                append_data(data, file_data)            
-            else:
-                create_data(data, file_data)
-            s_queue.task_done()
+        if isfile(file_data):
+            append_data(data, file_data)            
+        else:
+            create_data(data, file_data)
+        s_queue.task_done()
 
 def append_data(data, file_data):
     """ Append a .h5 data file and .txt meta data file.
@@ -114,7 +113,7 @@ def append_data(data, file_data):
     data_old[-1:] = data
     hf.close()
 
-def create_data(data, file_data):
+def create_data(sim_data, file_data):
     """ Create a .h5 data file and .txt meta data file.
     
     Parameters
@@ -126,8 +125,7 @@ def create_data(data, file_data):
         Name of .h5 file where the data will be save
     """
     hf = h5.File(file_data, 'w')
-    d = hf.create_dataset('data', (1,7), maxshape=(None, 7), chunks=(1,7))
-    d = data
+    hf.create_dataset('data', data=sim_data, maxshape=(None, 7), chunks=(1,7))
     hf.close()
     
 def save_meta(s_queue, file_meta):
@@ -142,19 +140,22 @@ def save_meta(s_queue, file_meta):
         Name of the .txt file where the meta data will be saved
     """
     while True:
+        fail=False
         count = s_queue.get()
-        if any(count[0:3]) or any(count[4:6]):
+        for key in count:
+            if count[key] != 0:
+                fail=True
+                break
+        if fail:
             if isfile(file_meta):
                 append_meta(count, file_meta)
             else:
-                create_meta(count, file_meta)
-                
+                create_meta(count, file_meta)            
         else:
             if isfile(file_meta):
                 append_meta_header(file_meta)
             else:
                 create_meta_header(file_meta)
-        
         s_queue.task_done()
 
 def append_meta(count, file_meta):
@@ -169,10 +170,10 @@ def append_meta(count, file_meta):
         Name of the .txt file where the meta data will be saved
     """
     count_prev = get_counts(file_meta)
-    if any(count_prev):
-        count = np.add(count_prev, count)
+    for key in count_prev:
+        count[key] = count[key] + count_prev[key]
     
-    fail_sum = np.sum(count[0:3])
+    fail_sum = count['fall fail'] + count['impact fail'] + count['collide fail']
     
     file = open(file_meta, 'w')
     
@@ -185,18 +186,18 @@ def append_meta(count, file_meta):
                'Initial Linear Velocity : ('+str(var.V_min)+' to '+str(var.V_max)+')m/s\n'
                'Initial Angular Velocity : ('+str(var.Om_min)+' to '+str(var.Om_max)+')rad/s\n'
                'Landing Area : ('+str(2*var.Dia)+' x '+str(2*var.Dia)+')m^2\n'
-               '\n'+str(count[3]-count[4])+' Individual Grains\n'
+               '\n'+str(count['success'])+' Individual Grains\n'
                '\n'
                +str(fail_sum)+' Particles Failed \n'
-               '    '+str(count[0])+' Falling Phase\n'
-               '    '+str(count[1])+' Impact Phase\n'
-               '    '+str(count[2])+' Collision Phase\n'
+               '    '+str(count['fall fail'])+' Falling Phase\n'
+               '    '+str(count['impact fail'])+' Impact Phase\n'
+               '    '+str(count['collide fail'])+' Collision Phase\n'
                '\n'
-               +str(count[3])+' Particles Flatten\n'
-               '    '+str(count[3]-count[4])+' Tor_grav > Tor_field\n'
-               '    '+str(count[4])+' Tor_grav < Tor_field\n'
+               +str(count['success']+count['lift fail'])+' Particles Flatten\n'
+               '    '+str(count['success'])+' Tor_grav > Tor_field\n'
+               '    '+str(count['lift fail'])+' Tor_grav < Tor_field\n'
                 '\n'
-                +str(count[5])+' Particles Never Flatten\n')
+                +str(count['never fail'])+' Particles Never Flatten\n')
     file.close()
     
 def append_meta_header(file_name):
@@ -208,9 +209,9 @@ def append_meta_header(file_name):
         Name of meta data file
     """
     count = get_counts(file_name)
-    count[3]+=1
+    count['success']+=1
         
-    fail_sum = np.sum(count[0:3])
+    fail_sum = count['fall fail'] + count['impact fail'] + count['collide fail']
     
     file = open(file_name, 'w')
     
@@ -223,18 +224,18 @@ def append_meta_header(file_name):
                'Initial Linear Velocity : ('+str(var.V_min)+' to '+str(var.V_max)+')m/s\n'
                'Initial Angular Velocity : ('+str(var.Om_min)+' to '+str(var.Om_max)+')rad/s\n'
                'Landing Area : ('+str(2*var.Dia)+' x '+str(2*var.Dia)+')m^2\n'
-               '\n'+str(count[3]-count[4])+' Individual Grains\n'
+               '\n'+str(count['success'])+' Individual Grains\n'
                '\n'
                +str(fail_sum)+' Particles Failed \n'
-               '    '+str(count[0])+' Falling Phase\n'
-               '    '+str(count[1])+' Impact Phase\n'
-               '    '+str(count[2])+' Collision Phase\n'
+               '    '+str(count['fall fail'])+' Falling Phase\n'
+               '    '+str(count['impact fail'])+' Impact Phase\n'
+               '    '+str(count['collide fail'])+' Collision Phase\n'
                '\n'
-               +str(count[3])+' Particles Flatten\n'
-               '    '+str(count[3]-count[4])+' Tor_grav > Tor_field\n'
-               '    '+str(count[4])+' Tor_grav < Tor_field\n'
+               +str(count['success']+count['lift fail'])+' Particles Flatten\n'
+               '    '+str(count['success'])+' Tor_grav > Tor_field\n'
+               '    '+str(count['lift fail'])+' Tor_grav < Tor_field\n'
                 '\n'
-                +str(count[5])+' Particles Never Flatten\n')
+                +str(count['never fail'])+' Particles Never Flatten\n')
     file.close()
     
     
@@ -250,7 +251,7 @@ def create_meta(count, file_meta):
     file_meta : str
         Name of the .txt file where the meta data will be saved
     """
-    fail_sum = np.sum(count[0:3])
+    fail_sum = count['fall fail'] + count['impact fail'] + count['collide fail']
     
     file = open(file_meta, 'w')
     
@@ -266,15 +267,15 @@ def create_meta(count, file_meta):
                '\n0 Individual Grains\n'
                '\n'
                +str(fail_sum)+' Particles Failed \n'
-               '    '+str(count[0])+' Falling Phase\n'
-               '    '+str(count[1])+' Impact Phase\n'
-               '    '+str(count[2])+' Collision Phase\n'
+               '    '+str(count['fall fail'])+' Falling Phase\n'
+               '    '+str(count['impact fail'])+' Impact Phase\n'
+               '    '+str(count['collide fail'])+' Collision Phase\n'
                '\n'
-               +str(count[3])+' Particles Flatten\n'
-               '    '+str(count[3]-count[4])+' Tor_grav > Tor_field\n'
-               '    '+str(count[4])+' Tor_grav < Tor_field\n'
+               +str(count['success']+count['lift fail'])+' Particles Flatten\n'
+               '    '+str(count['success'])+' Tor_grav > Tor_field\n'
+               '    '+str(count['lift fail'])+' Tor_grav < Tor_field\n'
                 '\n'
-                +str(count[5])+' Particles Never Flatten\n')
+                +str(count['never fail'])+' Particles Never Flatten\n')
     
     file.close()
     
@@ -320,21 +321,21 @@ def get_counts(file_name):
     file_name : str
         name of meta data file
     """
-    count = np.zeros(6)
+    count = {}
     fp = open(file_name)
     for i, line in enumerate(fp):
         if i == 14:
-            count[0] = get_number(line)
+            count['fall fail'] = get_number(line)
         elif i == 15:
-            count[1] = get_number(line)
+            count['impact fail'] = get_number(line)
         elif i == 16:
-            count[2] = get_number(line)
-        elif i == 18:
-            count[3] = get_number(line)
+            count['collide fail'] = get_number(line)
+        elif i == 19:
+            count['success'] = get_number(line)
         elif i == 20:
-            count[4] = get_number(line)
+            count['lift fail'] = get_number(line)
         elif i == 22:
-            count[5] = get_number(line)
+            count['never fail'] = get_number(line)
         elif i >  22:
             break
     fp.close
