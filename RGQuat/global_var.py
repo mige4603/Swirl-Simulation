@@ -9,7 +9,7 @@ Created on Sat Jan 12 13:33:51 2019
 import numpy as np
 import h5py as h5
 
-import functions as fun
+#import functions as fun
 
 run_num = 0
 rate = []
@@ -18,6 +18,7 @@ path = '/home/michael/Documents/LASP/Swirl-Simulation/RGQuat/'
 sim_path = path+'Sim_Data/'
 field_path = path+'Field_Data/'
 name = sim_path+'Dipole_Field_Sim'
+#name = sim_path+'Jan_Field_Sim'
 
 # Field Data for Reiner Gamma Swirl
 '''
@@ -52,7 +53,7 @@ den_max = 4.37e6
 den_pop = np.linspace(den_min, den_max, 10000)
  
 # Range of Grain Diameters [m]
-h_min = 0.1e-6  
+h_min = .1e-6  
 h_max = 10.0e-6 
 h_pop = np.linspace(h_min, h_max, 1000)
     
@@ -61,8 +62,8 @@ FeByWght_min = .00062
 FeByWght_max = .0012
 FeByWght_pop = np.linspace(FeByWght_min, FeByWght_max, 100)
 
-m_mom_min = 686160*FeByWght_min*den_min*((4/3)*np.pi*((h_min/2.0)**3))
-m_mom_max = 686160*FeByWght_max*den_max*((4/3)*np.pi*((h_max/2.0)**3))
+m_mom_min = FeByWght_min*den_min*((4/3)*np.pi*((h_min/2.0)**3))
+m_mom_max = FeByWght_max*den_max*((4/3)*np.pi*((h_max/2.0)**3))
 
 # Range of Velocities [m/s]    
 V_min = 0.1
@@ -70,8 +71,8 @@ V_max = 6.0
 V_pop = np.linspace(V_min, V_max, 10000)
     
 # Range of Angular Velocities [rad/s]
-Om_min = np.pi
-Om_max = 2*np.pi
+Om_min = 0
+Om_max = 2 * np.pi * np.sqrt(3)
 Om_pop = np.linspace(Om_min, Om_max, 10000)  
 
 # Vertical Ejector Angle angle
@@ -79,7 +80,7 @@ thetaMAX = (np.pi*17.)/36.
 
 # Division of Processes
 nproc = 2
-Im = 100000
+Im = 10000
 mult = Im/nproc
 
 data_cap = 100000

@@ -52,19 +52,27 @@ class dust_grain():
         y = np.sin(zetta)*np.sin(alpha)    
         z = np.cos(zetta)
         
-        r = var.r_m*np.array([x, y, z])
+        r = var.r_m * np.array([x, y, z])
         
         InCon = r
         
         theta = var.thetaMAX*np.random.random()
         phi = 2*np.pi*np.random.random()
         
-        vx = np.cos(phi)*np.sin(theta)
-        vy = np.sin(phi)*np.sin(theta)
-        vz = np.cos(theta)
+        r_unit = r / np.linalg.norm(r)
+        
+        X_Tan = np.array([1,0,0]) - r_unit[0] * r_unit
+        x_tan = X_Tan / np.linalg.norm(X_Tan)
+        
+        Y_Tan = np.cross(r_unit, x_tan)
+        y_tan = Y_Tan / np.linalg.norm(Y_Tan)
+        
+        vx = np.cos(phi)*np.sin(theta) * x_tan
+        vy = np.sin(phi)*np.sin(theta) * y_tan
+        vz = np.cos(theta) * r_unit
         v_norm = np.random.choice(var.V_pop)
         
-        v = v_norm*np.array([vx, vy, vz])
+        v = v_norm * (vx + vy + vz)
         
         InCon = np.append(InCon, v)
         
@@ -82,7 +90,7 @@ class dust_grain():
         omega_norm = np.random.choice(var.Om_pop)
         
         omega = omega_norm * np.array([0.0, omega_x, omega_y, omega_z])
-        quaternion_derivative = 0.5*fun.mult_Q(omega, quaternion)  
+        quaternion_derivative = 0.5*fun.mult_Q(omega, quaternion) 
         
         InCon = np.append(InCon, quaternion_derivative)
         
@@ -156,12 +164,10 @@ class dust_grain():
         B = fun.B_field(r)
         E = fun.E_field(r)
         
-        a = -var.g*r_unit
-        a = a + (self.Prams['charge']/self.Prams['mass']) * np.cross(v, B)
-        a = a + (self.Prams['charge']/self.Prams['mass'])*E
+        a = - var.g * r_unit + (self.Prams['charge']/self.Prams['mass']) * (np.cross(v, B) + E)
         a_radial = np.dot(a, r_unit)
-    
-        self.dt_base = -.5*(v_radial/a_radial)
+        
+        self.dt_base = -.5 * ( v_radial / a_radial )
         r_norm_prev = var.r_m
         while self.grav.successful():
             self.grav.integrate(self.grav.t + self.dt_base)
@@ -185,15 +191,13 @@ class dust_grain():
         B = fun.B_field(r)
         E = fun.E_field(r)
         
-        a = -var.g * r_unit
-        a = a + (self.Prams['charge']/self.Prams['mass']) * np.cross(v, B)
-        a = a + (self.Prams['charge']/self.Prams['mass']) * E
+        a = - var.g * r_unit + (self.Prams['charge']/self.Prams['mass']) * (np.cross(v, B) + E)
         a_radial = np.dot(a, r_unit)
         
-        while (r_norm - var.r_m) >= (10*self.Prams['length']) and self.grav.successful():     
+        while (r_norm) >= (var.r_m + 10*self.Prams['length']) and self.grav.successful():     
             dt = self.dt_base/div
-            dr = v_radial*dt+.5*a_radial*dt*dt
-            while (r_norm - var.r_m) >= (self.Prams['length']-dr) and self.grav.successful():
+            dr = v_radial * dt + .5 * a_radial*(dt**2)
+            while r_norm >= (var.r_m + self.Prams['length']-dr) and self.grav.successful():
                 self.grav.integrate(self.grav.t + 0.999*dt)
                 
                 r = self.grav.y[0:3]
@@ -206,9 +210,7 @@ class dust_grain():
                 B = fun.B_field(r)
                 E = fun.E_field(r)
                 
-                a = -var.g * r_unit
-                a = a + (self.Prams['charge']/self.Prams['mass']) * np.cross(v, B)
-                a = a + (self.Prams['charge']/self.Prams['mass']) * E
+                a = - var.g * r_unit + (self.Prams['charge']/self.Prams['mass']) * (np.cross(v, B) + E)
                 a_radial = np.dot(a, r_unit)
                 
             div = div * 10.
@@ -225,35 +227,33 @@ class dust_grain():
         B = fun.B_field(r)
         E = fun.E_field(r)
         
-        a = -var.g * r_unit
-        a = a + (self.Prams['charge']/self.Prams['mass']) * np.cross(v, B)
-        a = a + (self.Prams['charge']/self.Prams['mass']) * E
+        a = - var.g * r_unit + (self.Prams['charge']/self.Prams['mass']) * (np.cross(v, B) + E)
         a_radial = np.dot(a, r_unit)
         
         dr = (var.r_m + self.Prams['length']) - r_norm
         
         if dr < 0:
-            dt = (-v_radial - np.sqrt( v_radial*v_radial + 2*dr*a_radial )) / a_radial
+            dt = (-v_radial - np.sqrt( v_radial**2 + 2 * dr * a_radial ) ) / a_radial
             self.grav.integrate(self.grav.t + dt)
             r_norm = np.linalg.norm(self.grav.y[0:3])
-        
+            
         quat = self.grav.y[6:10] / np.linalg.norm(self.grav.y[6:10])
-        orient = fun.mult_Q(quat,fun.mult_Q(np.array([0,0,0,1]), fun.conj_Q(quat)))[1:4]
-        r_low = r_norm - (.5*self.Prams['length'] * abs(orient[2]))
-        dt = (-v_radial - np.sqrt( v_radial*v_radial - 0.1*self.Prams['length']*a_radial )) / a_radial
+        orient = fun.mult_Q(quat, fun.mult_Q(np.array([0,0,0,1]), fun.conj_Q(quat) ) )[1:4]
+        r_low = r_norm - (.5 * self.Prams['length'] * abs( np.dot(r_unit, orient) ) )
+        dt = (-v_radial - np.sqrt( v_radial**2 - 0.1 * self.Prams['length'] * a_radial ) ) / a_radial
         while r_low >= var.r_m and self.grav.successful():
             self.grav.integrate(self.grav.t + dt)
             quat = self.grav.y[6:10] / np.linalg.norm(self.grav.y[6:10])
-            orient = fun.mult_Q( quat, fun.mult_Q( np.array([0,0,0,1]), fun.conj_Q(quat) ) )[1:4]
+            orient = fun.mult_Q(quat, fun.mult_Q( np.array([0,0,0,1]), fun.conj_Q(quat) ) )[1:4]
             r_norm = np.linalg.norm( self.grav.y[0:3] )
-            r_low = r_norm - ( .5 * self.Prams['length'] * abs(orient[2]) )
-       
+            r_low = r_norm - ( .5 * self.Prams['length'] * abs( np.dot(r_unit, orient) ) )
+            
     def colliding_phase(self, integrate_mode, nstp):
         """ Track dust grain until it lies flatt on the surface.""" 
         r = self.grav.y[0:3]
         r_unit = r / np.linalg.norm(r)
         v = self.grav.y[3:6]
-        quat = self.grav.y[6:10]
+        quat = self.grav.y[6:10] / np.linalg.norm(self.grav.y[6:10])
         quat_deriv = self.grav.y[10:14]
         
         orient = fun.mult_Q( quat, fun.mult_Q( np.array([0,0,0,1]), fun.conj_Q(quat) ) )[1:4]
@@ -262,7 +262,7 @@ class dust_grain():
         B = fun.B_field(r)
         E = fun.E_field(r)
         
-        F_grav = -var.g * r_unit
+        F_grav = - self.Prams['mass'] * var.g * r_unit
         accel = self.Prams['magnetic'] * B
         accel = accel + .5*self.Prams['length']*sign*(F_grav + self.Prams['charge']*E)
         accel = np.insert(accel, 0, 0)
@@ -315,15 +315,15 @@ class dust_grain():
                 e3_chg_prev = e3_chg
                 lim += 1
                 
-        if impact.successful() and (lim < 5):
+        if impact.successful() and (lim < 6):
             # The dust grain may only have flattened because of its linear momentum.
             # Therefore, we must check to see if the torque due to its magnetic moment
             # might be sufficiently strong to overcome graity and lift it off the lunar surface
             T_nit = np.cross(e_3, r_unit)
-            t_nit = T_nit/np.linalg.norm(T_nit)
-            T_grav = -0.5*self.Prams['length']*self.Prams['mass']*var.g*t_nit
-            T_mag = self.Prams['magnetic']*np.cross(e_3, B)
-            T_net = np.add(T_grav, np.dot(T_mag, t_nit)*t_nit)
+            t_nit = T_nit / np.linalg.norm(T_nit)
+            T_grav = - 0.5 * self.Prams['length'] * self.Prams['mass'] * var.g * t_nit
+            T_mag = self.Prams['magnetic'] * np.cross(e_3, B)
+            T_net = np.add(T_grav, np.dot(T_mag, t_nit) * t_nit)
             lft_check = np.dot(T_net, t_nit)
             if lft_check <= 0.0:
                 self.counts['success']+=1
@@ -339,7 +339,7 @@ class dust_grain():
                 self.counts['lift fail']+=1
                 self.sim_results = False
                 
-        elif impact.successful() and not (lim < 5):
+        elif impact.successful() and not (lim < 6):
             # Dust Grain Never Flatened Out
             self.counts['never fail']+=1
             self.sim_results = False

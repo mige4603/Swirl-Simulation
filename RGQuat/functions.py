@@ -36,6 +36,7 @@ def conj_Q(Q):
 
 def B_field(R):
     """ Returns B_field at location R as described by Reiner Gamma field data."""
+    
     r_SW = R - var.SW_r
     r_SW_norm = np.linalg.norm(r_SW)
     B_SW_1 = (3*np.dot(var.SW_mag,r_SW)*r_SW)/(r_SW_norm**5)
@@ -49,7 +50,6 @@ def B_field(R):
     B_NE = np.subtract(B_NE_1, B_NE_2)*10**-7
     
     return B_SW + B_NE
-    
     '''
     R_o = np.array([-325000, -325000, 1898000])
     x, y, z = np.subtract(R, R_o)
