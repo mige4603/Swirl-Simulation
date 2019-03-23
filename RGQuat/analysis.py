@@ -90,11 +90,14 @@ def save_data(s_queue, file_data):
     """ Save data pushed to the queue."""
     while True:
         data = s_queue.get()
-        if isfile(file_data):
-            append_data(data, file_data)            
+        if data is None:
+            break
         else:
-            create_data(data, file_data)
-        s_queue.task_done()
+            if isfile(file_data):
+                append_data(data, file_data)            
+            else:
+                create_data(data, file_data)
+            s_queue.task_done()
 
 def append_data(data, file_data):
     """ Append a .h5 data file and .txt meta data file.
@@ -142,21 +145,24 @@ def save_meta(s_queue, file_meta):
     while True:
         fail=False
         count = s_queue.get()
-        for key in count:
-            if count[key] != 0:
-                fail=True
-                break
-        if fail:
-            if isfile(file_meta):
-                append_meta(count, file_meta)
-            else:
-                create_meta(count, file_meta)            
+        if count is None:
+            break
         else:
-            if isfile(file_meta):
-                append_meta_header(file_meta)
+            for key in count:
+                if count[key] != 0:
+                    fail=True
+                    break
+            if fail:
+                if isfile(file_meta):
+                    append_meta(count, file_meta)
+                else:
+                    create_meta(count, file_meta)            
             else:
-                create_meta_header(file_meta)
-        s_queue.task_done()
+                if isfile(file_meta):
+                    append_meta_header(file_meta)
+                else:
+                    create_meta_header(file_meta)
+            s_queue.task_done()
 
 def append_meta(count, file_meta):
     """ Append a .h5 data file and .txt meta data file.
@@ -181,12 +187,12 @@ def append_meta(count, file_meta):
     file.write('Reiner Gamma\n'
                '\n'
                'Magnetic Field: Two Dipoles (Kurata_2005.pdf) \n'
-               'Length of Grains : ('+str(var.h_min)+' to '+str(var.h_max)+')m\n'
-               'Magnetic Moment of Grains : ('+str(var.m_mom_min)+' to '+str(var.m_mom_max)+')Am^2\n' 
+               'Length of Grains : ('+str(var.h_min)+' to '+str(var.h_max)+') m\n'
+               'Magnetic Moment of Grains : ('+str(var.m_mom_min)+' to '+str(var.m_mom_max)+') Am^2\n' 
                'Charge on Grains : (-'+str(var.q_min)+' to -'+str(var.q_max)+') x 10e-19 C\n'
-               'Initial Linear Velocity : ('+str(var.V_min)+' to '+str(var.V_max)+')m/s\n'
-               'Initial Angular Velocity : ('+str(var.Om_min)+' to '+str(var.Om_max)+')rad/s\n'
-               'Landing Area : ('+str(2*var.Dia)+' x '+str(2*var.Dia)+')m^2\n'
+               'Initial Linear Velocity : ('+str(var.V_min)+' to '+str(var.V_max)+') m/s\n'
+               'Initial Angular Velocity : ('+str(var.Om_min)+' to '+str(var.Om_max)+') rad/s\n'
+               'Landing Area : ('+str(2*var.Dia)+' x '+str(2*var.Dia)+') m^2\n'
                '\n'+str(part_sum)+' Individual Grains\n'
                '\n'
                +str(fail_sum)+' Particles Failed \n'
@@ -221,12 +227,12 @@ def append_meta_header(file_name):
     file.write('Reiner Gamma\n'
                '\n'
                'Magnetic Field: Two Dipoles (Kurata_2005.pdf) \n'
-               'Length of Grains : ('+str(var.h_min)+' to '+str(var.h_max)+')m\n'
-               'Magnetic Moment of Grains : ('+str(var.m_mom_min)+' to '+str(var.m_mom_max)+')Am^2\n' 
+               'Length of Grains : ('+str(var.h_min)+' to '+str(var.h_max)+') m\n'
+               'Magnetic Moment of Grains : ('+str(var.m_mom_min)+' to '+str(var.m_mom_max)+') Am^2\n' 
                'Charge on Grains : (-'+str(var.q_min)+' to -'+str(var.q_max)+') x 10e-19 C\n'
-               'Initial Linear Velocity : ('+str(var.V_min)+' to '+str(var.V_max)+')m/s\n'
-               'Initial Angular Velocity : ('+str(var.Om_min)+' to '+str(var.Om_max)+')rad/s\n'
-               'Landing Area : ('+str(2*var.Dia)+' x '+str(2*var.Dia)+')m^2\n'
+               'Initial Linear Velocity : ('+str(var.V_min)+' to '+str(var.V_max)+') m/s\n'
+               'Initial Angular Velocity : ('+str(var.Om_min)+' to '+str(var.Om_max)+') rad/s\n'
+               'Landing Area : ('+str(2*var.Dia)+' x '+str(2*var.Dia)+') m^2\n'
                '\n'+str(part_sum)+' Individual Grains\n'
                '\n'
                +str(fail_sum)+' Particles Failed \n'
@@ -262,12 +268,12 @@ def create_meta(count, file_meta):
     file.write('Reiner Gamma\n'
                '\n'
                'Magnetic Field: Two Dipoles (Kurata_2005.pdf) \n'
-               'Length of Grains : ('+str(var.h_min)+' to '+str(var.h_max)+')m\n'
-               'Magnetic Moment of Grains : ('+str(var.m_mom_min)+' to '+str(var.m_mom_max)+')Am^2\n' 
+               'Length of Grains : ('+str(var.h_min)+' to '+str(var.h_max)+') m\n'
+               'Magnetic Moment of Grains : ('+str(var.m_mom_min)+' to '+str(var.m_mom_max)+') Am^2\n' 
                'Charge on Grains : (-'+str(var.q_min)+' to -'+str(var.q_max)+') x 10e-19 C\n'
-               'Initial Linear Velocity : ('+str(var.V_min)+' to '+str(var.V_max)+')m/s\n'
-               'Initial Angular Velocity : ('+str(var.Om_min)+' to '+str(var.Om_max)+')rad/s\n'
-               'Landing Area : ('+str(2*var.Dia)+' x '+str(2*var.Dia)+')m^2\n'
+               'Initial Linear Velocity : ('+str(var.V_min)+' to '+str(var.V_max)+') m/s\n'
+               'Initial Angular Velocity : ('+str(var.Om_min)+' to '+str(var.Om_max)+') rad/s\n'
+               'Landing Area : ('+str(2*var.Dia)+' x '+str(2*var.Dia)+') m^2\n'
                '\n1 Individual Grains\n'
                '\n'
                +str(fail_sum)+' Particles Failed \n'
@@ -297,12 +303,12 @@ def create_meta_header(file_name):
     file.write('Reiner Gamma\n'
                '\n'
                'Magnetic Field: Two Dipoles (Kurata_2005.pdf) \n'
-               'Length of Grains : ('+str(var.h_min)+' to '+str(var.h_max)+')m\n'
-               'Magnetic Moment of Grains : ('+str(var.m_mom_min)+' to '+str(var.m_mom_max)+')Am^2\n' 
+               'Length of Grains : ('+str(var.h_min)+' to '+str(var.h_max)+') m\n'
+               'Magnetic Moment of Grains : ('+str(var.m_mom_min)+' to '+str(var.m_mom_max)+') Am^2\n' 
                'Charge on Grains : (-'+str(var.q_min)+' to -'+str(var.q_max)+') x 10e-19 C\n'
-               'Initial Linear Velocity : ('+str(var.V_min)+' to '+str(var.V_max)+')m/s\n'
-               'Initial Angular Velocity : ('+str(var.Om_min)+' to '+str(var.Om_max)+')rad/s\n'
-               'Landing Area : ('+str(2*var.Dia)+' x '+str(2*var.Dia)+')m^2\n'
+               'Initial Linear Velocity : ('+str(var.V_min)+' to '+str(var.V_max)+') m/s\n'
+               'Initial Angular Velocity : ('+str(var.Om_min)+' to '+str(var.Om_max)+') rad/s\n'
+               'Landing Area : ('+str(2*var.Dia)+' x '+str(2*var.Dia)+') m^2\n'
                '\n1 Individual Grains\n'
                '\n'
                '0 Particles Failed \n'
