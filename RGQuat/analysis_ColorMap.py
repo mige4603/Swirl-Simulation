@@ -12,65 +12,64 @@ import global_var as var
 import h5py as h5
 import numpy as np
 
-dirc_name = var.sim_path
-file_name = dirc_name+'RGQuat_Loft_PramData.h5'
+dirc_name = var.sim_path+'Sorted_Pram/'
+viz_name = var.sim_path+'Visuals/'
+files = sorted( fun.list_files(dirc_name, 'h5') )
 
-data = h5.File(file_name, 'r')
-B_Norm_Log = data['Field Magnitude'][:]
-B_Dot = data['Field Orientation'][:]
-E_Dot = data['Grain Orientation'][:]
-data.close()
-
-numpts = int( .5* len(E_Dot) )
-
-B_Norm_Bin = 501
-B_Dot_Bin = 501
+B_Norm_Bin = 1001
+B_Dot_Bin = 1001
 N_bin = B_Norm_Bin*B_Dot_Bin
 
-mag_min = np.min(B_Norm_Log)
-mag_max = np.max(B_Norm_Log)
+mag_min = -9
+mag_max = -2
 B_Norm_Log_Space = np.linspace(mag_min, mag_max, B_Norm_Bin)
-B_Dot_Space = np.linspace(-1, 1, B_Dot_Bin)
+norm_spc = (B_Norm_Log_Space[1] - B_Norm_Log_Space[0])
 
-print '\nSorting E_Dot'
+B_Dot_Space = np.linspace(-1, 1, B_Dot_Bin)
+dot_spc = B_Dot_Space[1] - B_Dot_Space[0]
+
+print( '\nSorting E_Dot' )
 E_Dot_Space = {}
 
-cnt = 1
-trk = round(.01*numpts)
-pct = round((trk * 100) / numpts)
-for i in range(numpts):
+for file in files:
+    print(file)
 
-    if i == cnt * trk:
-        print '{} % Complete'.format(pct*cnt)
-        cnt+=1
+    data = h5.File(dirc_name+file, 'r')
+    B_Norm_Log = data['Field Magnitude'][:]
+    B_Dot = data['Field Orientation'][:]
+    E_Dot = data['Grain Orientation'][:]
+    data.close()
     
-    avg = E_Dot[i]
+    numpts = len(E_Dot)
     
-    norm = B_Norm_Log[i]
-    norm_idx = fun.find_nearest(B_Norm_Log_Space, norm)
+    for i in range(numpts):
+        avg = E_Dot[i]
+        
+        norm = B_Norm_Log[i]
+        norm_idx = fun.find_nearest(B_Norm_Log_Space, norm)
+        
+        dot = B_Dot[i]
+        dot_idx = fun.find_nearest(B_Dot_Space, dot)
+        
+        key = '{}-{}'.format(norm_idx, dot_idx)
+        if key in E_Dot_Space:
+            E_Dot_Space[key].append(avg)
+        else:
+            E_Dot_Space[key] = [avg]
     
-    dot = B_Dot[i]
-    dot_idx = fun.find_nearest(B_Dot_Space, dot)
-    
-    key = '{}-{}'.format(norm_idx, dot_idx)
-    if key in E_Dot_Space:
-        E_Dot_Space[key].append(avg)
-    else:
-        E_Dot_Space[key] = [avg]
-
 for key in E_Dot_Space:
     E_Dot_Space[key] = np.mean(E_Dot_Space[key])
-    
+
 print('\nWrite VTK file')
-file = open('{}IDQuat_ColorMap_halfData.vtk'.format(dirc_name+'Visuals/'), 'w')
+file = open('{0}RGQuat_ColorMap_Bin_{1}.vtk'.format(var.sim_path, B_Norm_Bin), 'w')
 file.write('# vtk DataFile Version 1.0\n'
            'B Field from Parsek\nASCII\n'
            'DATASET STRUCTURED_POINTS\n'
            'DIMENSIONS {0} {0} 1\n'
-           'ORIGIN 0 0 0\n'
-           'SPACING {1} {1} {1}\n'
-           'POINT_DATA {2}\n'
-           'VECTORS B float\n'.format(B_Norm_Bin, 0.011976, N_bin))
+           'ORIGIN {1} -1 0\n'
+           'SPACING {2} {3} 0.1\n'
+           'POINT_DATA {4}\n'
+           'VECTORS B float\n'.format(B_Norm_Bin, mag_min, norm_spc, dot_spc, N_bin))
 for y in range(B_Dot_Bin):
     for x in range(B_Norm_Bin):
         key = '{}-{}'.format(x, y)

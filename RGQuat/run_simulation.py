@@ -23,7 +23,7 @@ def initialize_grains(num_of_grains, num_of_procs, queues):
             
         queues[queue_key].put(grain)
         
-def track_dust_grains(numpts, i_queue, s_queue, f_queue):
+def track_dust_grains(numpts, i_queue, s_queue, f_queue, proc_key):
     for i in range(numpts):
         grain = i_queue.get()
         grain.track_phases()
@@ -31,8 +31,10 @@ def track_dust_grains(numpts, i_queue, s_queue, f_queue):
             s_queue.put(grain.sim_results)
         f_queue.put(grain.counts)
         i_queue.task_done()
-    
-while True:
+        
+counts = anal.get_counts(var.fileNames[1])
+succ_cnt = counts['success']
+while succ_cnt < 15e6:
     start_time = time.time()
     
     s_queue = mp.JoinableQueue(var.Im)
@@ -52,15 +54,21 @@ while True:
     procs['proc_init'] = threading.Thread(target=initialize_grains, args=(var.Im, var.nproc, queues,))
     procs['proc_init'].start()
     
+    for key in queues:
+        queue = queues[key]
+        qSize = queue.qsize()
+        while qSize < 1:
+            qSize = queue.qsize()
+    
     for i in range(var.nproc):
         proc_key = 'proc_{}'.format(i+1)
         queue_key = 'queue_{}'.format(i+1)
         
-        procs[proc_key] = mp.Process(target=track_dust_grains, args=(var.mult, queues[queue_key], s_queue, f_queue,))
+        procs[proc_key] = mp.Process(target=track_dust_grains, args=(var.mult, queues[queue_key], s_queue, f_queue, proc_key,))
         procs[proc_key].start()
     
     procs['proc_init'].join()
-    
+
     save_thread.start()
     fail_thread.start()
 
@@ -79,5 +87,8 @@ while True:
     var.rate.append( round(var.Im/run_time,2) )
     rate_avg = round( np.mean(var.rate), 2 )
     rate_std = round( np.std(var.rate), 2 )
-    print "\tCurrent rate : {} part/sec (+/-) {}".format( rate_avg, rate_std )
+    print( "\tCurrent rate : {} part/sec (+/-) {}".format( rate_avg, rate_std ) )
+    
+    counts = anal.get_counts(var.fileNames[1])
+    succ_cnt = counts['success']
     

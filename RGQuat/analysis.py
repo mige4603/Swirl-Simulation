@@ -36,19 +36,19 @@ def print_outcome(count, rate):
     """
     fail_sum = np.sum(count[0:3])
     
-    print '\n'+str(fail_sum)+' Particles Failed'
+    print( '\n'+str(fail_sum)+' Particles Failed')
     if np.sum(fail_sum) > 0:
-        print '    '+str(count[0])+' Falling Phase'
-        print '    '+str(count[1])+' Impact Phase'
-        print '    '+str(count[2])+' Collision Phase'
+        print( '    '+str(count[0])+' Falling Phase' )
+        print( '    '+str(count[1])+' Impact Phase' )
+        print( '    '+str(count[2])+' Collision Phase' )
     
-    print '\n'+str(count[3])+' Particles Flatten'
-    print '    '+str(count[3] - count[4])+' Tor_grav > Tor_field'
-    print '    '+str(count[4])+' Tor_grav < Tor_field'
+    print( '\n'+str(count[3])+' Particles Flatten' )
+    print( '    '+str(count[3] - count[4])+' Tor_grav > Tor_field' )
+    print( '    '+str(count[4])+' Tor_grav < Tor_field' )
     
-    print '\n'+str(count[5])+' Particles Never Flatten'
+    print( '\n'+str(count[5])+' Particles Never Flatten' )
     
-    print '\nPrevious Rate: '+str(rate)+' part/sec'
+    print( '\nPrevious Rate: '+str(rate)+' part/sec' )
     
 def merge_datasets(file_sub_1, file_sub_2, file_name, delete_old=False):
     """ Merge two data sets into a single file.
@@ -186,7 +186,9 @@ def append_meta(count, file_meta):
     
     file.write('Reiner Gamma\n'
                '\n'
-               'Magnetic Field: Two Dipoles (Kurata_2005.pdf) \n'
+               'Magnetic Field: Single Dipole \n'
+               '\t Position: ('+str(var.dipole_position[0])+', '+str(var.dipole_position[1])+', '+str(var.dipole_position[2])+') m\n'
+               '\t Moment: ('+str(var.dipole_moment[0])+', '+str(var.dipole_moment[1])+', '+str(var.dipole_moment[2])+') Am^2\n'
                'Length of Grains : ('+str(var.h_min)+' to '+str(var.h_max)+') m\n'
                'Magnetic Moment of Grains : ('+str(var.m_mom_min)+' to '+str(var.m_mom_max)+') Am^2\n' 
                'Charge on Grains : (-'+str(var.q_min)+' to -'+str(var.q_max)+') x 10e-19 C\n'
@@ -226,7 +228,9 @@ def append_meta_header(file_name):
     
     file.write('Reiner Gamma\n'
                '\n'
-               'Magnetic Field: Two Dipoles (Kurata_2005.pdf) \n'
+               'Magnetic Field: Single Dipole \n'
+               '\t Position: ('+str(var.dipole_position[0])+', '+str(var.dipole_position[1])+', '+str(var.dipole_position[2])+') m\n'
+               '\t Moment: ('+str(var.dipole_moment[0])+', '+str(var.dipole_moment[1])+', '+str(var.dipole_moment[2])+') Am^2\n'
                'Length of Grains : ('+str(var.h_min)+' to '+str(var.h_max)+') m\n'
                'Magnetic Moment of Grains : ('+str(var.m_mom_min)+' to '+str(var.m_mom_max)+') Am^2\n' 
                'Charge on Grains : (-'+str(var.q_min)+' to -'+str(var.q_max)+') x 10e-19 C\n'
@@ -267,7 +271,9 @@ def create_meta(count, file_meta):
     
     file.write('Reiner Gamma\n'
                '\n'
-               'Magnetic Field: Two Dipoles (Kurata_2005.pdf) \n'
+               'Magnetic Field: Single Dipole \n'
+               '\t Position: ('+str(var.dipole_position[0])+', '+str(var.dipole_position[1])+', '+str(var.dipole_position[2])+') m\n'
+               '\t Moment: ('+str(var.dipole_moment[0])+', '+str(var.dipole_moment[1])+', '+str(var.dipole_moment[2])+') Am^2\n'
                'Length of Grains : ('+str(var.h_min)+' to '+str(var.h_max)+') m\n'
                'Magnetic Moment of Grains : ('+str(var.m_mom_min)+' to '+str(var.m_mom_max)+') Am^2\n' 
                'Charge on Grains : (-'+str(var.q_min)+' to -'+str(var.q_max)+') x 10e-19 C\n'
@@ -302,7 +308,9 @@ def create_meta_header(file_name):
     
     file.write('Reiner Gamma\n'
                '\n'
-               'Magnetic Field: Two Dipoles (Kurata_2005.pdf) \n'
+               'Magnetic Field: Single Dipole \n'
+               '\t Position: ('+str(var.dipole_position[0])+', '+str(var.dipole_position[1])+', '+str(var.dipole_position[2])+') m\n'
+               '\t Moment: ('+str(var.dipole_moment[0])+', '+str(var.dipole_moment[1])+', '+str(var.dipole_moment[2])+') Am^2\n'
                'Length of Grains : ('+str(var.h_min)+' to '+str(var.h_max)+') m\n'
                'Magnetic Moment of Grains : ('+str(var.m_mom_min)+' to '+str(var.m_mom_max)+') Am^2\n' 
                'Charge on Grains : (-'+str(var.q_min)+' to -'+str(var.q_max)+') x 10e-19 C\n'
@@ -336,21 +344,21 @@ def get_counts(file_name):
     count = {}
     fp = open(file_name)
     for i, line in enumerate(fp):
-        if i == 13:
+        if i == 15:
             count['rise fail'] = get_number(line)
-        elif i == 14:
-            count['fall fail'] = get_number(line)
-        elif i == 15:
-            count['impact fail'] = get_number(line)
         elif i == 16:
+            count['fall fail'] = get_number(line)
+        elif i == 17:
+            count['impact fail'] = get_number(line)
+        elif i == 18:
             count['collide fail'] = get_number(line)
-        elif i == 19:
+        elif i == 21:
             count['success'] = get_number(line)
-        elif i == 20:
-            count['lift fail'] = get_number(line)
         elif i == 22:
+            count['lift fail'] = get_number(line)
+        elif i == 24:
             count['never fail'] = get_number(line)
-        elif i >  23:
+        elif i >  25:
             break
     fp.close
     
@@ -373,30 +381,39 @@ def landing_pattern(file_data, file_lan_pat):
     
     e_data = np.zeros((var.N_bin, 2))
 
-    for i in range(1, data_length):
+    for i in range(data_length):
         r = data[i][0:3]
-        e_vec = data[i][3:6]
+        r_unit = r / np.linalg.norm( r )
+        
+        r_tan_x = np.array([1,0,0]) - r_unit[0] * r_unit
+        r_tan_x = r_tan_x / np.linalg.norm( r_tan_x )
+        
+        r_tan_y = np.cross(r_unit, r_tan_x)
+        r_tan_y = r_tan_y / np.linalg.norm( r_tan_y )
+        
+        e_vec = data[i][3:6]        
+    
         h = data[i][6]
         
-        x, y, z = r
-        e1, e2, e3 = e_vec
+        #x, y, z = r
+        #e1, e2, e3 = e_vec
         
-        rad = np.sqrt(x*x+y*y)
-        e_vec_reduced = np.array([e1, e2])
+        rad = np.sqrt( r[0]**2 + r[1]**2 )
+        e_vec_reduced = np.array([ np.dot(e_vec, r_tan_x) , np.dot(e_vec, r_tan_y) ])#np.array([e1, e2])
         if (rad<=var.Dia) and not all(e_vec_reduced==0):
-            e_vec_reduced = e_vec_reduced/np.linalg.norm(e_vec_reduced)
+            e_vec_reduced = e_vec_reduced / np.linalg.norm( e_vec_reduced )
             
-            Xdim = int(round((x+var.Dia)/var.X_dim))
-            Ydim = int(round((y+var.Dia)/var.Y_dim))
+            Xdim = int( round( ( r[0] + var.Dia ) / var.X_dim ) )
+            Ydim = int( round( ( r[1] + var.Dia ) / var.Y_dim ) )
             
-            N = Ydim*var.X_bin + Xdim
-            e_data[N] = np.add(e_data[N],h*e_vec_reduced)
+            N = Ydim * var.X_bin + Xdim
+            e_data[N] = np.add( e_data[N], h * e_vec_reduced )
             
-    vec_avg = np.zeros((var.N_bin,2))
+    vec_avg = np.zeros((var.N_bin, 2))
     
     for j in range(var.N_bin):
         if not all (e_data[j]==0):
-            vec_avg[j] = e_data[j]/np.linalg.norm(e_data[j])
+            vec_avg[j] = e_data[j] / np.linalg.norm( e_data[j] )
             
     file = open(file_lan_pat, 'w')
     file.write('# vtk DataFile Version 1.0\n'

@@ -27,7 +27,7 @@ file.write('# vtk DataFile Version 1.0\n'
 
 x_vec = np.array([1,0,0])
 for y in domain:
-    print 'Y = %s' % str(round(y))
+    print( 'Y = %s' % str(round(y)) )
     for x in domain:
         z = np.sqrt(var.r_m**2 - (x**2 + y**2))
         r = np.array([x,y,z])

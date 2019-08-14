@@ -11,10 +11,10 @@ import h5py as h5
 
 #import functions as fun
 
-run_num = 0
+run_num = 200
 rate = []
 
-path = '/home/michael/Documents/LASP/Swirl-Simulation/RGQuat/'
+path = '/home/cu-pwfa/Documents/Michael/Swirl-Simulation/RGQuat/'
 sim_path = path+'Sim_Data/'
 field_path = path+'Field_Data/'
 name = sim_path+'Dipole_Field_Sim'
@@ -26,12 +26,19 @@ field_data = h5.File(field_path+'RG_Full_Field_Data.h5', 'r')
 B_data = field_data['B_field']
 E_data = field_data['E_field']
 '''
+
+'''
 SW_r = np.array([15055.59399353, 19522.97153838, 1725823.91415573])
 SW_mag = np.array([-1.12822658e+13, -6.07455748e+11,  -1.77414475e+11])
 
 NE_r = np.array([-87674.4142417, 124611.72907353, 1723678.99391525])
 NE_mag = np.array([-1.30337601e+12, -3.24501798e+12, -1.45152530e+11])
+'''
+depth_pop = np.linspace(1, 1000, 10000) * 1000
+moment_pop = np.linspace(100, 1000, 1000) * 1e11
 
+dipole_position = np.zeros(3)
+dipole_moment = np.zeros(3)
 # Gravity on Moon surface [m/s^2]
 g = 1.62519    
 
@@ -44,7 +51,7 @@ q_max = 1000
 q_pop = np.linspace(q_min, q_max, 1000)   
 
 # Range of Landing Site -Dia to Dia [m]    
-Dia = 325000
+Dia = 130000
 zettaMAX = np.arcsin(Dia/r_m)
 
 # Density Range [g/m^3]
@@ -79,9 +86,9 @@ Om_pop = np.linspace(Om_min, Om_max, 10000)
 thetaMAX = (np.pi*17.)/36. 
 
 # Division of Processes
-nproc = 2
+nproc = 20
 Im = 10000
-mult = Im/nproc
+mult = int( Im/nproc )
 
 data_cap = 100000
 data_cap_inc = data_cap
