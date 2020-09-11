@@ -6,6 +6,7 @@ Created on Thu Sep 10 22:38:54 2020
 """
 
 import os
+import sys
 import time
 import numpy as np
 import h5py as hf
@@ -23,9 +24,12 @@ def run_sim(grain):
             
 def main(num_of_procs, num_of_grains):
     ### Gernerate Dipole ###
-    var.dipole_position = np.array([0,0,var.r_m - np.random.choice(var.depth_pop)])
-    var.dipole_moment = np.array([0,0,np.random.choice(var.moment_pop)])
+    #var.dipole_position = np.array([0,0,var.r_m - np.random.choice(var.depth_pop)])
+    #var.dipole_moment = np.array([0,0,np.random.choice(var.moment_pop)])
     
+    var.dipole_position = np.array([0,0,var.r_m-1e5])
+    var.dipole_moment = np.array([0,0,1e10])
+    '''
     theta = 2*np.pi*np.random.random()
     phi = np.pi*np.random.random()
     
@@ -38,7 +42,7 @@ def main(num_of_procs, num_of_grains):
                        [sin_theta, cos_theta*cos_phi, -cos_theta*sin_phi],
                        [0, sin_phi, cos_phi]])
     var.dipole_moment = np.matmul(matrix, var.dipole_moment)
-    
+    '''
     ### Instantiate Grains ###
     grains = np.array([tDG.dust_grain() for i in range(num_of_grains)])
     
@@ -72,6 +76,6 @@ def main(num_of_procs, num_of_grains):
         hf_file.create_dataset('data', data=finCon)
 
 if __name__=='__main__':
-    num_of_procs = 10
-    num_of_grains = 1e6
+    num_of_procs = int(sys.argv[1])
+    num_of_grains = int(sys.argv[2])
     main(num_of_procs, num_of_grains)
