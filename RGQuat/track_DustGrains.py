@@ -23,6 +23,7 @@ class dust_grain():
                        'never fail' : 0}
         
         self.initial_conditions()
+        
 
     def initial_conditions(self, ell_mode=False):       
         """Generate a randomized set of initial conditions.
@@ -131,6 +132,10 @@ class dust_grain():
         
         self.InCon = InCon
         self.Prams = Prams
+        
+        self.grav = sp.ode(fun.integrate_flight).set_integrator('vode')
+        self.grav.set_f_params(self.Prams).set_initial_value(self.InCon, 0.0)
+        
             
     def track_phases(self, integrate_mode='vode', nstp=5000):
         """Track grain through phase space across all flight phases."""
