@@ -254,7 +254,7 @@ def append_meta_header(file_name):
     
     
     
-def create_meta(count, file_meta):
+def create_meta(count, file_meta, time):
     """ Create a .h5 data file and .txt meta data file.
     
     Parameters
@@ -266,6 +266,7 @@ def create_meta(count, file_meta):
         Name of the .txt file where the meta data will be saved
     """
     fail_sum = count['rise fail'] + count['fall fail'] + count['impact fail'] + count['collide fail']
+    part_sum = fail_sum + count['success'] + count['lift fail'] + count['never fail']
     
     file = open(file_meta, 'w')
     
@@ -280,7 +281,7 @@ def create_meta(count, file_meta):
                'Initial Linear Velocity : ('+str(var.V_min)+' to '+str(var.V_max)+') m/s\n'
                'Initial Angular Velocity : ('+str(var.Om_min)+' to '+str(var.Om_max)+') rad/s\n'
                'Landing Area : ('+str(2*var.Dia)+' x '+str(2*var.Dia)+') m^2\n'
-               '\n1 Individual Grains\n'
+               '\n'+str(part_sum)+' Individual Grains\n'
                '\n'
                +str(fail_sum)+' Particles Failed \n'
                '    '+str(count['rise fail'])+' Rising Phase\n'
@@ -292,7 +293,9 @@ def create_meta(count, file_meta):
                '    '+str(count['success'])+' Tor_grav > Tor_field\n'
                '    '+str(count['lift fail'])+' Tor_grav < Tor_field\n'
                 '\n'
-                +str(count['never fail'])+' Particles Never Flatten\n')
+                +str(count['never fail'])+' Particles Never Flatten\n'
+                '\nTotal Simulation Time : '+str(time)+' sec\n'
+                'Time per grain : {0} sec\n'.format(time/part_sum))
     
     file.close()
     
@@ -394,9 +397,6 @@ def landing_pattern(file_data, file_lan_pat):
         e_vec = data[i][3:6]        
     
         h = data[i][6]
-        
-        #x, y, z = r
-        #e1, e2, e3 = e_vec
         
         rad = np.sqrt( r[0]**2 + r[1]**2 )
         e_vec_reduced = np.array([ np.dot(e_vec, r_tan_x) , np.dot(e_vec, r_tan_y) ])#np.array([e1, e2])

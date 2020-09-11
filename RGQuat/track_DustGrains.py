@@ -133,9 +133,6 @@ class dust_grain():
         self.InCon = InCon
         self.Prams = Prams
         
-        self.grav = sp.ode(fun.integrate_flight).set_integrator('vode')
-        self.grav.set_f_params(self.Prams).set_initial_value(self.InCon, 0.0)
-        
             
     def track_phases(self, integrate_mode='vode', nstp=5000):
         """Track grain through phase space across all flight phases."""
@@ -145,17 +142,17 @@ class dust_grain():
         self.rising_phase()
         if not self.grav.successful():
             self.counts['rise fail'] += 1
-            self.sim_results = False
+            self.sim_results = np.full(7,np.nan)
         else:
             self.falling_phase()
             if not self.grav.successful():
                 self.counts['fall fail']+=1
-                self.sim_results = False
+                self.sim_results = np.full(7,np.nan)
             else:
                 self.impacting_phase()
                 if not self.grav.successful():
                     self.counts['impact fail']+=1 
-                    self.sim_results = False
+                    self.sim_results = np.full(7,np.nan)
                 else:
                     self.colliding_phase(integrate_mode, nstp)
                     
@@ -342,15 +339,15 @@ class dust_grain():
                 
             else:
                 self.counts['lift fail']+=1
-                self.sim_results = False
+                self.sim_results = np.full(7,np.nan)
                 
         elif impact.successful() and not (lim < 6):
             # Dust Grain Never Flatened Out
             self.counts['never fail']+=1
-            self.sim_results = False
+            self.sim_results = np.full(7,np.nan)
             
         else:
             # Post-Collison Phase Failure 
             self.counts['collide fail']+=1
-            self.sim_results = False
+            self.sim_results = np.full(7,np.nan)
             
