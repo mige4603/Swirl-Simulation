@@ -70,6 +70,6 @@ def main(num_of_procs, num_of_grains):
     
     
 if __name__=='__main__':
-    num_of_procs = 2#int(sys.argv[1])
-    num_of_grains = 10#int(sys.argv[2])
+    num_of_procs = int(sys.argv[1])
+    num_of_grains = int(sys.argv[2])
     main(num_of_procs, num_of_grains)
