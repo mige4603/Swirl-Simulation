@@ -13,8 +13,8 @@ import scipy.integrate as sp
 import numpy as np
 
 class dust_grain():
-    def __init__(self):
-        self.var = gVar.variables()
+    def __init__(self, namelist):
+        self.var = gVar.variables(namelist)
         self.counts = {'success' : 0,
                        'rise fail' : 0,
                        'fall fail' : 0,

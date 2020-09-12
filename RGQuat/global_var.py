@@ -10,9 +10,9 @@ import numpy as np
 import h5py as h5
 
     
-def variables():
+def variables(input_namelist):
     inputs = {}
-    with open('input.namelist','r') as file:
+    with open(input_namelist,'r') as file:
         lines = file.readlines()
         for line in lines:
             if line[0]!='#':
@@ -20,16 +20,7 @@ def variables():
                 line = line.split()
                 if len(line) > 0:
                     inputs[line[0]] = line[2]   
-    '''
-    run_num = 200
-    rate = []
     
-    path = '/home/cu-pwfa/Documents/Michael/Swirl-Simulation/RGQuat/'
-    sim_path = path+'Sim_Data/'
-    field_path = path+'Field_Data/'
-    name = sim_path+'Dipole_Field_Sim'
-    #name = sim_path+'Jan_Field_Sim'
-    '''
     # Gravity surface [m/s^2]
     if 'grav' in inputs: 
         g = float(inputs['grav'])
@@ -120,22 +111,8 @@ def variables():
     
     # Vertical Ejector Angle angle
     thetaMAX = (np.pi*17.)/36. 
-    '''
-    # Division of Processes
-    nproc = 20
-    Im = 10000
-    mult = int( Im/nproc )
     
-    data_cap = 100000
-    data_cap_inc = data_cap
-    
-    run_count = int( data_cap/Im )
-    
-    fileNames = ['{}.h5'.format(name), 
-                 '{}_Meta.txt'.format(name),
-                 '{}_Landing.vtk'.format(name), 
-                 '{}_Correlation.vtk'.format(name)]
-    '''
+    # Magnetic Field Options 
     if inputs['fieldType'] == 'JanDeca':
         # Field Data for Reiner Gamma Swirl
         field_data = h5.File('RG_Full_Field_Data.h5', 'r')

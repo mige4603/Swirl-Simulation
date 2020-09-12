@@ -254,7 +254,7 @@ def append_meta_header(file_name):
     
     
     
-def create_meta(count, file_meta, time):
+def create_meta(count, file_meta, time, namelist):
     """ Create a .h5 data file and .txt meta data file.
     
     Parameters
@@ -265,39 +265,37 @@ def create_meta(count, file_meta, time):
     file_meta : str
         Name of the .txt file where the meta data will be saved
     """
-    var = gVar.variables()
+    var = gVar.variables(namelist)
     
     fail_sum = count['rise fail'] + count['fall fail'] + count['impact fail'] + count['collide fail']
     part_sum = fail_sum + count['success'] + count['lift fail'] + count['never fail']
     
     #file = open(file_meta, 'w')
     
-    print('\n'
-          '\n'
-          'Magnetic Field: Single Dipole \n'
-          '\t Position: ('+str(var['dipole_position'][0])+', '+str(var['dipole_position'][1])+', '+str(var['dipole_position'][2])+') m\n'
-          '\t Moment: ('+str(var['dipole_moment'][0])+', '+str(var['dipole_moment'][1])+', '+str(var['dipole_moment'][2])+') Am^2\n'
-          'Length of Grains : ('+str(var['h_min'])+' to '+str(var['h_max'])+') m\n'
-          'Magnetic Moment of Grains : ('+str(var['m_mom_min'])+' to '+str(var['m_mom_max'])+') Am^2\n' 
-          'Charge on Grains : (-'+str(var['q_min'])+' to -'+str(var['q_max'])+') x 10e-19 C\n'
-          'Initial Linear Velocity : ('+str(var['V_min'])+' to '+str(var['V_max'])+') m/s\n'
-          'Initial Angular Velocity : ('+str(var['Om_min'])+' to '+str(var['Om_max'])+') rad/s\n'
-          'Landing Area : ('+str(2*var['Dia'])+' x '+str(2*var['Dia'])+') m^2\n'
-          '\n'+str(part_sum)+' Individual Grains\n'
-          '\n'
-          +str(fail_sum)+' Particles Failed \n'
-          '    '+str(count['rise fail'])+' Rising Phase\n'
-          '    '+str(count['fall fail'])+' Falling Phase\n'
-          '    '+str(count['impact fail'])+' Impact Phase\n'
-          '    '+str(count['collide fail'])+' Collision Phase\n'
-          '\n'
-          +str(count['success']+count['lift fail'])+' Particles Flatten\n'
-          '    '+str(count['success'])+' Tor_grav > Tor_field\n'
-          '    '+str(count['lift fail'])+' Tor_grav < Tor_field\n'
-          '\n'
-           +str(count['never fail'])+' Particles Never Flatten\n'
-           '\nTotal Simulation Time : '+str(time)+' sec\n'
-           'Time per grain : {0} sec\n'.format(time/part_sum))
+    print('\n\nMagnetic Field: Single Dipole \n'
+               '\t Position: ('+str(var['dipole_position'][0])+', '+str(var['dipole_position'][1])+', '+str(var['dipole_position'][2])+') m\n'
+               '\t Moment: ('+str(var['dipole_moment'][0])+', '+str(var['dipole_moment'][1])+', '+str(var['dipole_moment'][2])+') Am^2\n'
+               'Length of Grains : ('+str(var['h_min'])+' to '+str(var['h_max'])+') m\n'
+               'Magnetic Moment of Grains : ('+str(var['m_mom_min'])+' to '+str(var['m_mom_max'])+') Am^2\n' 
+               'Charge on Grains : (-'+str(var['q_min'])+' to -'+str(var['q_max'])+') x 10e-19 C\n'
+               'Initial Linear Velocity : ('+str(var['V_min'])+' to '+str(var['V_max'])+') m/s\n'
+               'Initial Angular Velocity : ('+str(var['Om_min'])+' to '+str(var['Om_max'])+') rad/s\n'
+               'Landing Area : ('+str(2*var['Dia'])+' x '+str(2*var['Dia'])+') m^2\n'
+               '\n'+str(part_sum)+' Individual Grains\n'
+               '\n'
+               +str(fail_sum)+' Particles Failed \n'
+               '    '+str(count['rise fail'])+' Rising Phase\n'
+               '    '+str(count['fall fail'])+' Falling Phase\n'
+               '    '+str(count['impact fail'])+' Impact Phase\n'
+               '    '+str(count['collide fail'])+' Collision Phase\n'
+               '\n'
+               +str(count['success']+count['lift fail'])+' Particles Flatten\n'
+               '    '+str(count['success'])+' Tor_grav > Tor_field\n'
+               '    '+str(count['lift fail'])+' Tor_grav < Tor_field\n'
+               '\n'
+               +str(count['never fail'])+' Particles Never Flatten\n'
+               '\nTotal Simulation Time : '+str(time)+' sec\n'
+               'Time per grain : {0} sec\n'.format(time/part_sum))
     
     #file.close()
     
