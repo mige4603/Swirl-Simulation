@@ -6,7 +6,7 @@ Created on Sun Jan 13 22:13:49 2019
 @author: michael
 """
 
-import global_var as var
+import global_var as gVar
 import numpy as np
 import h5py as h5
 from os.path import isfile 
@@ -265,6 +265,8 @@ def create_meta(count, file_meta, time):
     file_meta : str
         Name of the .txt file where the meta data will be saved
     """
+    var = gVar.variables()
+    
     fail_sum = count['rise fail'] + count['fall fail'] + count['impact fail'] + count['collide fail']
     part_sum = fail_sum + count['success'] + count['lift fail'] + count['never fail']
     
@@ -273,14 +275,14 @@ def create_meta(count, file_meta, time):
     print('\n'
           '\n'
           'Magnetic Field: Single Dipole \n'
-          '\t Position: ('+str(var.dipole_position[0])+', '+str(var.dipole_position[1])+', '+str(var.dipole_position[2])+') m\n'
-          '\t Moment: ('+str(var.dipole_moment[0])+', '+str(var.dipole_moment[1])+', '+str(var.dipole_moment[2])+') Am^2\n'
-          'Length of Grains : ('+str(var.h_min)+' to '+str(var.h_max)+') m\n'
-          'Magnetic Moment of Grains : ('+str(var.m_mom_min)+' to '+str(var.m_mom_max)+') Am^2\n' 
-          'Charge on Grains : (-'+str(var.q_min)+' to -'+str(var.q_max)+') x 10e-19 C\n'
-          'Initial Linear Velocity : ('+str(var.V_min)+' to '+str(var.V_max)+') m/s\n'
-          'Initial Angular Velocity : ('+str(var.Om_min)+' to '+str(var.Om_max)+') rad/s\n'
-          'Landing Area : ('+str(2*var.Dia)+' x '+str(2*var.Dia)+') m^2\n'
+          '\t Position: ('+str(var['dipole_position'][0])+', '+str(var['dipole_position'][1])+', '+str(var['dipole_position'][2])+') m\n'
+          '\t Moment: ('+str(var['dipole_moment'][0])+', '+str(var['dipole_moment'][1])+', '+str(var['dipole_moment'][2])+') Am^2\n'
+          'Length of Grains : ('+str(var['h_min'])+' to '+str(var['h_max'])+') m\n'
+          'Magnetic Moment of Grains : ('+str(var['m_mom_min'])+' to '+str(var['m_mom_max'])+') Am^2\n' 
+          'Charge on Grains : (-'+str(var['q_min'])+' to -'+str(var['q_max'])+') x 10e-19 C\n'
+          'Initial Linear Velocity : ('+str(var['V_min'])+' to '+str(var['V_max'])+') m/s\n'
+          'Initial Angular Velocity : ('+str(var['Om_min'])+' to '+str(var['Om_max'])+') rad/s\n'
+          'Landing Area : ('+str(2*var['Dia'])+' x '+str(2*var['Dia'])+') m^2\n'
           '\n'+str(part_sum)+' Individual Grains\n'
           '\n'
           +str(fail_sum)+' Particles Failed \n'

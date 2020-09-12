@@ -9,10 +9,10 @@ import os
 import sys
 import time
 import numpy as np
-import h5py as hf
+#import h5py as hf
 
 import analysis as an
-import global_var as var
+#import global_var as gVar
 import track_DustGrains as tDG
 
 import multiprocessing as mp
@@ -21,9 +21,9 @@ def run_sim(grain):
     grain.track_phases()
     return grain.sim_results, grain.counts
 
-            
 def main(num_of_procs, num_of_grains):
     ### Gernerate Dipole ###
+    '''
     var.dipole_position = np.array([0,0,var.r_m - np.random.choice(var.depth_pop)])
     var.dipole_moment = np.array([0,0,np.random.choice(var.moment_pop)])
     
@@ -39,7 +39,7 @@ def main(num_of_procs, num_of_grains):
                        [sin_theta, cos_theta*cos_phi, -cos_theta*sin_phi],
                        [0, sin_phi, cos_phi]])
     var.dipole_moment = np.matmul(matrix, var.dipole_moment)
-    
+    '''
     ### Instantiate Grains ###
     grains = np.array([tDG.dust_grain() for i in range(num_of_grains)])
     
@@ -69,7 +69,7 @@ def main(num_of_procs, num_of_grains):
     an.create_meta(counts, os.path.join(os.getcwd(), 'meta_data.txt'), time_data)
     
     
-if __name__=='__main__':
+if __name__=='__main__':    
     num_of_procs = int(sys.argv[1])
     num_of_grains = int(sys.argv[2])
     main(num_of_procs, num_of_grains)

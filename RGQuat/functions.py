@@ -6,7 +6,7 @@ Created on Sat Jan 12 12:51:00 2019
 @author: michael
 """
 
-import global_var as var
+#import global_var as var
 import numpy as np
 from os import listdir
 
@@ -34,26 +34,26 @@ def conj_Q(Q):
     Q_new = np.array([Q[0], -Q[1], -Q[2], -Q[3]])
     return Q_new    
 
-def B_field(R):
+def B_field(R, var):
     """ Returns B_field at location R as described by Reiner Gamma field data."""
     '''
-    r_SW = R - var.SW_r
+    r_SW = R - var['SW_r']
     r_SW_norm = np.linalg.norm(r_SW)
-    B_SW_1 = (3*np.dot(var.SW_mag,r_SW)*r_SW)/(r_SW_norm**5)
-    B_SW_2 = var.SW_mag/(r_SW_norm**3)
+    B_SW_1 = (3*np.dot(var['SW_mag'],r_SW)*r_SW)/(r_SW_norm**5)
+    B_SW_2 = var['SW_mag']/(r_SW_norm**3)
     B_SW = np.subtract(B_SW_1, B_SW_2)*10**-7
     
-    r_NE = R - var.NE_r
+    r_NE = R - var['NE_r']
     r_NE_norm = np.linalg.norm(r_NE)
-    B_NE_1 = (3*np.dot(var.NE_mag,r_NE)*r_NE)/(r_NE_norm**5)
-    B_NE_2 = var.NE_mag/(r_NE_norm**3)
+    B_NE_1 = (3*np.dot(var['NE_mag'],r_NE)*r_NE)/(r_NE_norm**5)
+    B_NE_2 = var['NE_mag']/(r_NE_norm**3)
     B_NE = np.subtract(B_NE_1, B_NE_2)*10**-7
     
     return B_SW + B_NE
     '''
-    r = R - var.dipole_position
+    r = R - var['dipole_position']
     r_norm = np.linalg.norm(r)
-    B = 10**-7 * ( ( ( 3 * np.dot( var.dipole_moment, r) * r ) / ( r_norm**5 ) ) - (var.dipole_moment / ( r_norm**3 ) ) ) 
+    B = 10**-7 * ( ( ( 3 * np.dot( var['dipole_moment'], r) * r ) / ( r_norm**5 ) ) - (var['dipole_moment'] / ( r_norm**3 ) ) ) 
 
     return B
     '''    
@@ -65,20 +65,20 @@ def B_field(R):
         j = int(abs(y) / 1357)
         k = int(abs(z) / 1357)
         
-        return np.array( var.B_data[k,j,i] )
+        return np.array( var['B_data'][k,j,i] )
         
     elif (-678.497 < x < 650678) and (-678.497 < y < 650678) and (z <= -194729):
         i = int(abs(x) / 1357)
         j = int(abs(y) / 1357)
         k = 143
         
-        return np.array( var.B_data[k,j,i] )
+        return np.array( var['B_data'][k,j,i] )
     
     else:
         return np.array([0, 0, 0])  
     '''
     
-def E_field(R):
+def E_field(R, var):
     """ Returns E_field at location R as described by Reiner Gamma field data."""
     '''
     R_o = np.array([-325000, -325000, 1898000])
@@ -89,14 +89,14 @@ def E_field(R):
         j = int(abs(y) / 1357)
         k = int(abs(z) / 1357)
         
-        return np.array( var.E_data[k, j, i] )
+        return np.array( var['E_data'][k, j, i] )
         
     elif (-678.497 < x < 650678) and (-678.497 < y < 650678) and (z <= -194729):
         i = int(abs(x) / 1357)
         j = int(abs(y) / 1357)
         k = 143
         
-        return np.array( var.E_data[k, j, i] )
+        return np.array( var['E_data'][k, j, i] )
         
     else:
         return np.array([0, 0, 0])  
@@ -132,11 +132,11 @@ def integrate_flight(t, InCon, Prams):
     quat = quat/quat_norm    
     quat_deriv = InCon[10:14]
     
-    B = B_field(r)
-    E = E_field(r) 
+    B = B_field(r, Prams['var'])
+    E = E_field(r, Prams['var']) 
     
     # Forces acting on the center of mass
-    accel = -var.g*r_nit
+    accel = -Prams['var']['g']*r_nit
     accel = accel + (Prams['charge']/Prams['mass']) * np.cross(v, B)
     accel = accel + (Prams['charge']/Prams['mass'])*E
 
@@ -203,7 +203,7 @@ def integrate_impact(t, InCon, Prams):
     
     return np.insert(quat_deriv_deriv, 0, quat_deriv)  
 
-def dipole_moment_conversion(lat, lon, inc, dec, depth, moment):
+def dipole_moment_conversion(lat, lon, inc, dec, depth, moment, var):
     """ Conversts selenographic coordinates and angles of magnetic 
         inclination/declination to simulation coordinates for the 
         location and orientation of a dipolar magnetic moment.
@@ -264,7 +264,7 @@ def dipole_moment_conversion(lat, lon, inc, dec, depth, moment):
                   np.cos(phi)])
     
     r_sim = np.dot(M, r)
-    r_sim = (r_sim/np.linalg.norm(r_sim)) * (var.r_m - depth)
+    r_sim = (r_sim/np.linalg.norm(r_sim)) * (var['r_m'] - depth)
     
     z_tan = np.array([0,0,1]) - r[2]*r
     z_tan = z_tan/np.linalg.norm(z_tan)
