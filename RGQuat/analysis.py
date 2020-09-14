@@ -9,6 +9,8 @@ Created on Sun Jan 13 22:13:49 2019
 import global_var as gVar
 import numpy as np
 import h5py as h5
+
+import os, sys
 from os.path import isfile 
 from os import remove
 
@@ -273,29 +275,29 @@ def create_meta(count, file_meta, time, namelist):
     #file = open(file_meta, 'w')
     
     print('\n\nMagnetic Field: Single Dipole \n'
-               '\t Position: ('+str(var['dipole_position'][0])+', '+str(var['dipole_position'][1])+', '+str(var['dipole_position'][2])+') m\n'
-               '\t Moment: ('+str(var['dipole_moment'][0])+', '+str(var['dipole_moment'][1])+', '+str(var['dipole_moment'][2])+') Am^2\n'
-               'Length of Grains : ('+str(var['h_min'])+' to '+str(var['h_max'])+') m\n'
-               'Magnetic Moment of Grains : ('+str(var['m_mom_min'])+' to '+str(var['m_mom_max'])+') Am^2\n' 
-               'Charge on Grains : (-'+str(var['q_min'])+' to -'+str(var['q_max'])+') x 10e-19 C\n'
-               'Initial Linear Velocity : ('+str(var['V_min'])+' to '+str(var['V_max'])+') m/s\n'
-               'Initial Angular Velocity : ('+str(var['Om_min'])+' to '+str(var['Om_max'])+') rad/s\n'
-               'Landing Area : ('+str(2*var['Dia'])+' x '+str(2*var['Dia'])+') m^2\n'
-               '\n'+str(part_sum)+' Individual Grains\n'
-               '\n'
-               +str(fail_sum)+' Particles Failed \n'
-               '    '+str(count['rise fail'])+' Rising Phase\n'
-               '    '+str(count['fall fail'])+' Falling Phase\n'
-               '    '+str(count['impact fail'])+' Impact Phase\n'
-               '    '+str(count['collide fail'])+' Collision Phase\n'
-               '\n'
-               +str(count['success']+count['lift fail'])+' Particles Flatten\n'
-               '    '+str(count['success'])+' Tor_grav > Tor_field\n'
-               '    '+str(count['lift fail'])+' Tor_grav < Tor_field\n'
-               '\n'
-               +str(count['never fail'])+' Particles Never Flatten\n'
-               '\nTotal Simulation Time : '+str(time)+' sec\n'
-               'Time per grain : {0} sec\n'.format(time/part_sum))
+          '\t Position: ('+str(var['dipole_position'][0])+', '+str(var['dipole_position'][1])+', '+str(var['dipole_position'][2])+') m\n'
+          '\t Moment: ('+str(var['dipole_moment'][0])+', '+str(var['dipole_moment'][1])+', '+str(var['dipole_moment'][2])+') Am^2\n'
+          'Length of Grains : ('+str(var['h_min'])+' to '+str(var['h_max'])+') m\n'
+          'Magnetic Moment of Grains : ('+str(var['m_mom_min'])+' to '+str(var['m_mom_max'])+') Am^2\n' 
+          'Charge on Grains : (-'+str(var['q_min'])+' to -'+str(var['q_max'])+') x 10e-19 C\n'
+          'Initial Linear Velocity : ('+str(var['V_min'])+' to '+str(var['V_max'])+') m/s\n'
+          'Initial Angular Velocity : ('+str(var['Om_min'])+' to '+str(var['Om_max'])+') rad/s\n'
+          'Landing Area : ('+str(2*var['Dia'])+' x '+str(2*var['Dia'])+') m^2\n'
+          '\n'+str(part_sum)+' Individual Grains\n'
+          '\n'
+          +str(fail_sum)+' Particles Failed \n'
+          '    '+str(count['rise fail'])+' Rising Phase\n'
+          '    '+str(count['fall fail'])+' Falling Phase\n'
+          '    '+str(count['impact fail'])+' Impact Phase\n'
+          '    '+str(count['collide fail'])+' Collision Phase\n'
+          '\n'
+          +str(count['success']+count['lift fail'])+' Particles Flatten\n'
+          '    '+str(count['success'])+' Tor_grav > Tor_field\n'
+          '    '+str(count['lift fail'])+' Tor_grav < Tor_field\n'
+          '\n'
+          +str(count['never fail'])+' Particles Never Flatten\n'
+          '\nTotal Simulation Time : '+str(time)+' sec\n'
+          'Time per grain : {0} sec\n'.format(time/part_sum))
     
     #file.close()
     
@@ -367,7 +369,7 @@ def get_counts(file_name):
     
     return count
                     
-def landing_pattern(file_data, file_lan_pat):
+def landing_pattern(file_data, file_lan_pat, params):
     """ Construct the landing pattern from data.
     
     Parameters
@@ -382,7 +384,7 @@ def landing_pattern(file_data, file_lan_pat):
     data = hf['data']
     data_length = len(data)
     
-    e_data = np.zeros((var.N_bin, 2))
+    e_data = np.zeros((params['N_bin'], 2))
 
     for i in range(data_length):
         r = data[i][0:3]
@@ -400,18 +402,18 @@ def landing_pattern(file_data, file_lan_pat):
         
         rad = np.sqrt( r[0]**2 + r[1]**2 )
         e_vec_reduced = np.array([ np.dot(e_vec, r_tan_x) , np.dot(e_vec, r_tan_y) ])#np.array([e1, e2])
-        if (rad<=var.Dia) and not all(e_vec_reduced==0):
+        if (rad<=params['Dia']) and not all(e_vec_reduced==0):
             e_vec_reduced = e_vec_reduced / np.linalg.norm( e_vec_reduced )
             
-            Xdim = int( round( ( r[0] + var.Dia ) / var.X_dim ) )
-            Ydim = int( round( ( r[1] + var.Dia ) / var.Y_dim ) )
+            Xdim = int( round( ( r[0] + params['Dia'] ) / params['X_dim'] ) )
+            Ydim = int( round( ( r[1] + params['Dia'] ) / params['Y_dim'] ) )
             
-            N = Ydim * var.X_bin + Xdim
+            N = Ydim * params['X_bin'] + Xdim
             e_data[N] = np.add( e_data[N], h * e_vec_reduced )
             
-    vec_avg = np.zeros((var.N_bin, 2))
+    vec_avg = np.zeros((params['N_bin'], 2))
     
-    for j in range(var.N_bin):
+    for j in range(params['N_bin']):
         if not all (e_data[j]==0):
             vec_avg[j] = e_data[j] / np.linalg.norm( e_data[j] )
             
@@ -423,15 +425,15 @@ def landing_pattern(file_data, file_lan_pat):
                'ORIGIN 0 0 0\n'
                'SPACING {1} {1} {1}\n'
                'POINT_DATA {2}\n'
-               'VECTORS B float\n'.format(var.X_bin, var.spc, var.N_bin))
-    for t in range(var.N_bin):
+               'VECTORS B float\n'.format(params['X_bin'], params['spc'], params['N_bin']))
+    for t in range(params['N_bin']):
         x, y = vec_avg[t]
         file.write(str(x) + ' ' + str(y) + ' ' + str(0.0) + '\n')
     file.close() 
     
     return vec_avg
     
-def correlation_pattern(vec_avg, file_cor_pat):
+def correlation_pattern(vec_avg, file_cor_pat, params):
     """ Construct a correlation pattern with the landing data.
     
     Parameters
@@ -442,63 +444,63 @@ def correlation_pattern(vec_avg, file_cor_pat):
     file_cor_pat : str
         correlation pattern file name
     """
-    cross_cor = np.zeros((var.N_bin, 2))
+    cross_cor = np.zeros((params['N_bin'], 2))
     
-    for q in range(var.N_bin):
+    for q in range(params['N_bin']):
             
         if not all (vec_avg[q]==0):
             vec = vec_avg[q]
             sca = []   
             
-            rem_1 = q % var.X_bin
-            rem_2 = (q+1) % var.X_bin
+            rem_1 = q % params['X_bin']
+            rem_2 = (q+1) % params['X_bin']
             
-            q_2 = q+var.X_bin
-            if q_2 > 0 and q_2 < var.N_bin:
+            q_2 = q+params['X_bin']
+            if q_2 > 0 and q_2 < params['N_bin']:
                 vec_2 = vec_avg[q_2]
                 if not all (vec_2==0):
                     sca.append(np.dot(vec_2,vec))
                         
-            q_7 = q-var.X_bin
-            if q_7 > 0 and q_7 < var.N_bin:
+            q_7 = q-params['X_bin']
+            if q_7 > 0 and q_7 < params['N_bin']:
                 vec_7 = vec_avg[q_7]
                 if not all (vec_7==0):
                     sca.append(np.dot(vec_7,vec)) 
             
             if not (rem_1==0):
-                q_1 = q+var.X_bin-1
-                if q_1 > 0 and q_1 < var.N_bin:
+                q_1 = q+params['X_bin']-1
+                if q_1 > 0 and q_1 < params['N_bin']:
                     vec_1 = vec_avg[q_1]
                     if not all (vec_1==0):
                         sca.append(np.dot(vec_1,vec)) 
                         
                 q_4 = q-1
-                if q_4 > 0 and q_4 < var.N_bin:
+                if q_4 > 0 and q_4 < params['N_bin']:
                     vec_4 = vec_avg[q_4]
                     if not all (vec_4==0):
                         sca.append(np.dot(vec_4,vec)) 
                     
-                q_6 = q-var.X_bin-1
-                if q_6 > 0 and q_6 < var.N_bin:
+                q_6 = q-params['X_bin']-1
+                if q_6 > 0 and q_6 < params['N_bin']:
                     vec_6 = vec_avg[q_6]
                     if not all (vec_6==0):
                         sca.append(np.dot(vec_6,vec)) 
                         
             if not (rem_2==0):
-                q_3 = q+var.X_bin+1
-                if q_3 > 0 and q_3 < var.N_bin:
+                q_3 = q+params['X_bin']+1
+                if q_3 > 0 and q_3 < params['N_bin']:
                     vec_3 = vec_avg[q_3]
                     if not all (vec_3==0):
                         sca.append(np.dot(vec_3,vec)) 
                         
                 q_5 = q+1
-                if q_5 > 0 and q_5 < var.N_bin:
+                if q_5 > 0 and q_5 < params['N_bin']:
                     vec_5 = vec_avg[q_5]
                     if not all (vec_5==0):
                         sca.append(np.dot(vec_5,vec)) 
             
-                q_8 = q-var.X_bin+1
-                if q_8 > 0 and q_8 < var.N_bin:
+                q_8 = q-params['X_bin']+1
+                if q_8 > 0 and q_8 < params['N_bin']:
                     vec_8 = vec_avg[q_8]
                     if not all (vec_8==0):
                         sca.append(np.dot(vec_8,vec)) 
@@ -514,8 +516,131 @@ def correlation_pattern(vec_avg, file_cor_pat):
                'ORIGIN 0 0 0\n'
                'SPACING {1} {1} {1}\n'
                'POINT_DATA {2}\n'
-               'VECTORS B float\n'.format(var.X_bin, var.spc, var.N_bin))
-    for t in range(var.N_bin):            
+               'VECTORS B float\n'.format(params['X_bin'], params['spc'], params['N_bin']))
+    for t in range(params['N_bin']):            
         scalar_avg, scalar_std = cross_cor[t]
         file.write(str(scalar_avg) + ' ' + str(scalar_std) + ' ' + str(0.0) + '\n')
     file.close() 
+
+
+### New Analysis Scripts ###
+    
+def read_dataOut(dataPath, readHead=False, nGrains=10000):
+    meta = {}
+    data = np.empty((nGrains, 7))
+    with open(dataPath, 'r') as file:
+        lines = file.readlines()
+        
+        for beg_idx, line in enumerate(lines):
+            try:
+                line = line.strip().split()
+                err_chk = float(line[0])
+                break
+            
+            except ValueError:
+                continue
+        
+        for i, line in enumerate(lines[beg_idx:beg_idx+nGrains]):
+            line = line.strip()
+            line = line.split()
+            for j, val in enumerate(line):
+                data[i,j] = float(val)
+        
+        if readHead:
+            header = []
+            for line in lines[beg_idx+nGrains+2:beg_idx+nGrains+12]:
+                header.append(line)
+            meta['header'] = header
+            
+        for line in lines[beg_idx+nGrains+12::]:
+            line = line.strip()
+            line = line.split()
+            if len(line) > 0:
+                if line[1] == 'Rising':
+                    meta['rise fail'] = int(line[0])
+                elif line[1] == 'Falling':
+                    meta['fall fail'] = int(line[0])
+                elif line[1] == 'Impact':
+                    meta['impact fail'] = int(line[0])
+                elif line[1] == 'Collision':
+                    meta['collide fail'] = int(line[0])
+                elif line[1] == 'Tor_grav' and line[2] == '>':
+                    meta['success'] = int(line[0])
+                elif line[1] == 'Tor_grav' and line[2] == '<':
+                    meta['lift fail'] = int(line[0])
+                elif line[1] == 'Particles' and line[2] == 'Never':
+                    meta['never fail'] = int(line[0])
+                elif line[0] == 'Total':
+                    meta['total time'] = float(line[4])
+                elif line[0] == 'Time':
+                    meta['grain time'] = float(line[4])
+    
+    return data, meta
+
+
+def reformat_dipole_data(path, nGrains=10000, nCPU=2):
+    dipoles = [f.name for f in os.scandir(path) if f.is_dir()]
+    for dipole in dipoles:
+        print('Working on '+dipole)
+        pathDip = os.path.join(path, dipole)
+        runs = [f.name for f in os.scandir(pathDip) if f.is_dir()]
+        
+        keys = ['rise fail','fall fail','impact fail','collide fail','success','lift fail','never fail','total time','grain time']
+        metaDip = {}
+        for key in keys:
+            metaDip[key] = 0    
+        dataDip = np.empty((len(runs)*nGrains, 7))        
+        
+        data, meta = read_dataOut(os.path.join(pathDip, runs[0], 'data.out'), readHead=True, nGrains=nGrains)
+        dataDip[0:nGrains] = data
+        for key in meta:
+            if key == 'total time' or key =='grain time':
+                metaDip[key] = np.r_[metaDip[key], meta[key]]
+            elif key == 'header':
+                metaDip[key] = meta[key]
+            else:
+                metaDip[key] = metaDip[key] + meta[key]
+    
+        for idx, run in enumerate(runs[1::]):
+            idx+=1
+            pathRun = os.path.join(pathDip, run, 'data.out')
+            data, meta = read_dataOut(pathRun, nGrains=nGrains)
+            dataDip[idx*nGrains:(idx+1)*nGrains] = data
+            for key in meta:
+                if key == 'total time' or key =='grain time':
+                    metaDip[key] = np.r_[metaDip[key], meta[key]]
+                else:
+                    metaDip[key] = metaDip[key] + meta[key]
+        
+        metaPath = os.path.join(pathDip,'meta_data.txt')
+        dataPath = os.path.join(pathDip,'data.h5')
+        with open(metaPath,'w') as file:
+            header = metaDip['header']
+            for head in header:
+                file.write(head)
+            
+            fail_sum = metaDip['rise fail'] + metaDip['fall fail'] + metaDip['impact fail'] + metaDip['collide fail']
+            part_sum = fail_sum + metaDip['success'] + metaDip['lift fail'] + metaDip['never fail']
+            time_avg = (float(nCPU)/3600) * np.sum(metaDip['total time'][1::])
+            grain_avg = nCPU * np.mean(metaDip['grain time'][1::])
+            
+            file.write(str(part_sum)+' Individual Grains\n'
+                       '\n'
+                       +str(fail_sum)+' Particles Failed \n'
+                       '    '+str(metaDip['rise fail'])+' Rising Phase\n'
+                       '    '+str(metaDip['fall fail'])+' Falling Phase\n'
+                       '    '+str(metaDip['impact fail'])+' Impact Phase\n'
+                       '    '+str(metaDip['collide fail'])+' Collision Phase\n'
+                       '\n'
+                       +str(metaDip['success']+metaDip['lift fail'])+' Particles Flatten\n'
+                       '    '+str(metaDip['success'])+' Tor_grav > Tor_field\n'
+                       '    '+str(metaDip['lift fail'])+' Tor_grav < Tor_field\n'
+                        '\n'
+                        +str(metaDip['never fail'])+' Particles Never Flatten\n'
+                        '\nTotal Simulation Time : '+str(time_avg)+' cpu hours\n'
+                        'Time per grain : '+str(grain_avg)+' sec')
+            
+        with h5.File(dataPath,'w') as hf_file:
+            hf_file.create_dataset('data', data=dataDip)
+                    
+                    

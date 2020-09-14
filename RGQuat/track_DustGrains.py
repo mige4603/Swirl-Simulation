@@ -144,17 +144,17 @@ class dust_grain():
         self.rising_phase()
         if not self.grav.successful():
             self.counts['rise fail'] += 1
-            self.sim_results = np.full(7,np.nan)
+            self.sim_results = np.full(7,np.nan).reshape(1,7)
         else:
             self.falling_phase()
             if not self.grav.successful():
                 self.counts['fall fail']+=1
-                self.sim_results = np.full(7,np.nan)
+                self.sim_results = np.full(7,np.nan).reshape(1,7)
             else:
                 self.impacting_phase()
                 if not self.grav.successful():
                     self.counts['impact fail']+=1 
-                    self.sim_results = np.full(7,np.nan)
+                    self.sim_results = np.full(7,np.nan).reshape(1,7)
                 else:
                     self.colliding_phase(integrate_mode, nstp)
                     
@@ -341,15 +341,15 @@ class dust_grain():
                 
             else:
                 self.counts['lift fail']+=1
-                self.sim_results = np.full(7,np.nan)
+                self.sim_results = np.full(7,np.nan).reshape(1,7)
                 
         elif impact.successful() and not (lim < 6):
             # Dust Grain Never Flatened Out
             self.counts['never fail']+=1
-            self.sim_results = np.full(7,np.nan)
+            self.sim_results = np.full(7,np.nan).reshape(1,7)
             
         else:
             # Post-Collison Phase Failure 
             self.counts['collide fail']+=1
-            self.sim_results = np.full(7,np.nan)
+            self.sim_results = np.full(7,np.nan).reshape(1,7)
             
