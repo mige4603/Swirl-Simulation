@@ -7,39 +7,32 @@ Created on Mon Jan 28 10:11:40 2019
 """
 
 import functions as fun
-import global_var as var
+import global_var as gVar
 
+import os
 import h5py as h5
 import numpy as np
 
-dirc_name = var.sim_path
-#files = sorted( fun.list_files(dirc_name, 'h5') )
 
-files = np.arange(201, 231)
+path = os.path.join(os.getcwd(),'monteCarlo_dipoles')
+for pathDip in [f.name for f in os.scandir(path) if f.is_dir()]:
+    print('Working in '+pathDip)
+    path_dip = os.path.join(path, pathDip)
+            
+    meta_path = os.path.join(path_dip,'input.namelist')
+    data_path = os.path.join(path_dip, 'data.h5')
+    sort_path = os.path.join(path_dip, 'data_sort_prams.h5')
+    
+    if os.path.isfile(sort_path):
+        print('   '+sort_path+' already exists!')
+        continue
+    
+    params = gVar.variables(meta_path)
 
-for f in files:
-    file = 'Dipole_Field_Sim_{}.h5'.format(f)
-    print(file)
+    with h5.File(data_path,'r') as hf_file:
+        data_set = hf_file['data'][:]
     
-    meta_file_name = file[0:17]+'Meta_'+file[17:-2]+'txt'
-    meta_file = open(dirc_name+meta_file_name, 'r')
-    line = meta_file.readlines()
-    meta_file.close()
-    
-    mag_locate_str = line[3]
-    mag_locate = np.array([0, 0, float(mag_locate_str[23:-5]) ])
-    var.dipole_position = mag_locate
-    
-    mag_orient_str = line[4]
-    mag_orient_str = mag_orient_str[11:-7].split(', ')
-    mag_orient = np.array([float(mag_orient_str[0]), float(mag_orient_str[1]), float(mag_orient_str[2])])
-    var.dipole_moment = mag_orient
-    
-    data = h5.File(dirc_name+file, 'r')
-    data_set = data['data'][:]
-    data.close()
-    
-    size = len(data_set)
+    size = data_set.shape[0]
     
     B_Norm_Log = []
     B_Dot = []
@@ -54,7 +47,7 @@ for f in files:
         e = sim[3:6]
         h = sim[6]
         
-        B = fun.B_field(r)
+        B = fun.B_field(r, params)
         B_norm = np.linalg.norm(B)
         B_norm_log = np.log10(B_norm)
         
@@ -76,12 +69,8 @@ for f in files:
         
         else:
             continue
-        
-    data_new = h5.File(dirc_name+'Sorted_Pram/'+file[0:-3]+'_PramSort.h5', 'w')
     
-    data_new.create_dataset('Field Magnitude', data=B_Norm_Log)
-    data_new.create_dataset('Field Orientation', data=B_Dot)
-    data_new.create_dataset('Grain Orientation', data=E_Dot)
-    
-    data_new.close()
-    
+    with h5.File(sort_path,'w') as hf_file:    
+        hf_file.create_dataset('Field Magnitude', data=B_Norm_Log)
+        hf_file.create_dataset('Field Orientation', data=B_Dot)
+        hf_file.create_dataset('Grain Orientation', data=E_Dot)

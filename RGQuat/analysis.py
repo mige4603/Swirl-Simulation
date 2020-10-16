@@ -14,6 +14,7 @@ import os, sys
 from os.path import isfile 
 from os import remove
 
+
 def get_number(line, cnt=0):
     # Reads a line from .txt file and returns the first float in that line
     for j in line:
@@ -579,68 +580,97 @@ def read_dataOut(dataPath, readHead=False, nGrains=10000):
 
 
 def reformat_dipole_data(path, nGrains=10000, nCPU=2):
+    from shutil import rmtree
+    
     dipoles = [f.name for f in os.scandir(path) if f.is_dir()]
     for dipole in dipoles:
         print('Working on '+dipole)
         pathDip = os.path.join(path, dipole)
         runs = [f.name for f in os.scandir(pathDip) if f.is_dir()]
-        
-        keys = ['rise fail','fall fail','impact fail','collide fail','success','lift fail','never fail','total time','grain time']
-        metaDip = {}
-        for key in keys:
-            metaDip[key] = 0    
-        dataDip = np.empty((len(runs)*nGrains, 7))        
-        
-        data, meta = read_dataOut(os.path.join(pathDip, runs[0], 'data.out'), readHead=True, nGrains=nGrains)
-        dataDip[0:nGrains] = data
-        for key in meta:
-            if key == 'total time' or key =='grain time':
-                metaDip[key] = np.r_[metaDip[key], meta[key]]
-            elif key == 'header':
-                metaDip[key] = meta[key]
-            else:
-                metaDip[key] = metaDip[key] + meta[key]
-    
-        for idx, run in enumerate(runs[1::]):
-            idx+=1
-            pathRun = os.path.join(pathDip, run, 'data.out')
-            data, meta = read_dataOut(pathRun, nGrains=nGrains)
-            dataDip[idx*nGrains:(idx+1)*nGrains] = data
-            for key in meta:
-                if key == 'total time' or key =='grain time':
-                    metaDip[key] = np.r_[metaDip[key], meta[key]]
-                else:
-                    metaDip[key] = metaDip[key] + meta[key]
-        
-        metaPath = os.path.join(pathDip,'meta_data.txt')
-        dataPath = os.path.join(pathDip,'data.h5')
-        with open(metaPath,'w') as file:
-            header = metaDip['header']
-            for head in header:
-                file.write(head)
+        if len(runs) > 0:
+            keys = ['rise fail','fall fail','impact fail','collide fail','success','lift fail','never fail','total time','grain time']
+            metaDip = {}
+            for key in keys:
+                metaDip[key] = 0    
+                dataDip = np.empty((len(runs)*nGrains, 7))   
+	
+            try:
+                read_chk = False
+                data, meta = read_dataOut(os.path.join(pathDip, runs[0], 'data.out'), readHead=True, nGrains=nGrains)
+                read_chk = True
+            except ValueError:
+                print('   Read Check failed for '+runs[0])
+	
+            if read_chk:
+                dataDip[0:nGrains] = data
+                for key in meta:
+                    if key == 'total time' or key =='grain time':
+                        metaDip[key] = np.r_[metaDip[key], meta[key]]
+                    elif key == 'header':
+                        metaDip[key] = meta[key]
+                    else:
+                        metaDip[key] = metaDip[key] + meta[key]
+	    
+            with open(os.path.join(pathDip,runs[0],'input.namelist'),'r') as file:
+                lines = file.readlines()
+            with open(os.path.join(pathDip,'input.namelist'),'w') as file:
+                for line in lines:
+                    file.write(line)
+	            
+            for idx, run in enumerate(runs[1::]):
+                idx+=1
+                pathRun = os.path.join(pathDip, run, 'data.out')
+                try:
+                    read_chk = False
+                    data, meta = read_dataOut(pathRun, nGrains=nGrains)
+                    read_chk = True
+                except ValueError:
+                    print('   Read Check failed for '+run)
+    	            
+                if read_chk:
+                    dataDip[idx*nGrains:(idx+1)*nGrains] = data
+                    for key in meta:
+                        if key == 'total time' or key =='grain time':
+                            metaDip[key] = np.r_[metaDip[key], meta[key]]
+                        else:
+                            metaDip[key] = metaDip[key] + meta[key]
+    	
+                    metaPath = os.path.join(pathDip,'meta_data.txt')
+                    dataPath = os.path.join(pathDip,'data.h5')
+                    with open(metaPath,'w') as file:
+                        header = metaDip['header']
+                        for head in header:
+                            file.write(head)
+    	        
+                        fail_sum = metaDip['rise fail'] + metaDip['fall fail'] + metaDip['impact fail'] + metaDip['collide fail']
+                        part_sum = fail_sum + metaDip['success'] + metaDip['lift fail'] + metaDip['never fail']
+                        time_avg = (float(nCPU)/3600) * np.sum(metaDip['total time'][1::])
+                        grain_avg = nCPU * np.mean(metaDip['grain time'][1::])
+            	                
+                        file.write(str(part_sum)+' Individual Grains\n\n'
+                                   +str(fail_sum)+' Particles Failed \n'
+                                   '    '+str(metaDip['rise fail'])+' Rising Phase\n'
+                                   '    '+str(metaDip['fall fail'])+' Falling Phase\n'
+                                   '    '+str(metaDip['impact fail'])+' Impact Phase\n'
+                                   '    '+str(metaDip['collide fail'])+' Collision Phase\n\n'
+                                   +str(metaDip['success']+metaDip['lift fail'])+' Particles Flatten\n'
+                                   '    '+str(metaDip['success'])+' Tor_grav > Tor_field\n'
+                                   '    '+str(metaDip['lift fail'])+' Tor_grav < Tor_field\n\n'
+            	                    +str(metaDip['never fail'])+' Particles Never Flatten\n'
+                                   '\nTotal Simulation Time : '+str(time_avg)+' cpu hours\n'
+                                   'Time per grain : '+str(grain_avg)+' sec')
+    	
+            with h5.File(dataPath,'w') as hf_file:
+                hf_file.create_dataset('data', data=dataDip)
+            	
+            for runDir in [f.name for f in os.scandir(pathDip) if f.is_dir()]:
+                runPath = os.path.join(pathDip, runDir)
+                rmtree(runPath)
+                	    
+            os.remove(os.path.join(pathDip, 'run_exec.sh'))
+            os.remove(os.path.join(pathDip, 'run_list.txt'))
+            os.remove(os.path.join(pathDip, 'submit.sub'))
             
-            fail_sum = metaDip['rise fail'] + metaDip['fall fail'] + metaDip['impact fail'] + metaDip['collide fail']
-            part_sum = fail_sum + metaDip['success'] + metaDip['lift fail'] + metaDip['never fail']
-            time_avg = (float(nCPU)/3600) * np.sum(metaDip['total time'][1::])
-            grain_avg = nCPU * np.mean(metaDip['grain time'][1::])
-            
-            file.write(str(part_sum)+' Individual Grains\n'
-                       '\n'
-                       +str(fail_sum)+' Particles Failed \n'
-                       '    '+str(metaDip['rise fail'])+' Rising Phase\n'
-                       '    '+str(metaDip['fall fail'])+' Falling Phase\n'
-                       '    '+str(metaDip['impact fail'])+' Impact Phase\n'
-                       '    '+str(metaDip['collide fail'])+' Collision Phase\n'
-                       '\n'
-                       +str(metaDip['success']+metaDip['lift fail'])+' Particles Flatten\n'
-                       '    '+str(metaDip['success'])+' Tor_grav > Tor_field\n'
-                       '    '+str(metaDip['lift fail'])+' Tor_grav < Tor_field\n'
-                        '\n'
-                        +str(metaDip['never fail'])+' Particles Never Flatten\n'
-                        '\nTotal Simulation Time : '+str(time_avg)+' cpu hours\n'
-                        'Time per grain : '+str(grain_avg)+' sec')
-            
-        with h5.File(dataPath,'w') as hf_file:
-            hf_file.create_dataset('data', data=dataDip)
-                    
-                    
+        else:
+            print('   No Runs.')
+

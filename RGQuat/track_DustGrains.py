@@ -136,7 +136,7 @@ class dust_grain():
         self.Prams = Prams
         
             
-    def track_phases(self, integrate_mode='vode', nstp=5000):
+    def track_phases(self, integrate_mode='vode', nstp=50000):
         """Track grain through phase space across all flight phases."""
         self.grav = sp.ode(fun.integrate_flight).set_integrator(integrate_mode,nsteps=nstp)
         self.grav.set_f_params(self.Prams).set_initial_value(self.InCon, 0.0)
